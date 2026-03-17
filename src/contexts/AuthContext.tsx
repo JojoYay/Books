@@ -68,6 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               email: data.email ?? firebaseUser.email ?? '',
               role: data.role ?? 'member',
               createdAt: data.createdAt?.toDate() ?? new Date(),
+              photoUrl: (data.photoUrl as string) || undefined,
+              tagline: (data.tagline as string) || undefined,
+              bio: (data.bio as string) || undefined,
             };
             setUserProfile(profile);
             // ログインするたびにアカウント一覧を更新

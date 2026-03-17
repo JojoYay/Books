@@ -17,6 +17,7 @@ const baseLinks: NavLink[] = [
   { href: '/bookmarks', label: 'しおり' },
   { href: '/memos', label: 'メモ' },
   { href: '/progress', label: '達成率' },
+  { href: '/profile', label: 'プロフィール' },
 ];
 
 const leaderLinks: NavLink[] = [

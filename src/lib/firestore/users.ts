@@ -25,6 +25,9 @@ function toUserProfile(
       data.createdAt instanceof Timestamp
         ? data.createdAt.toDate()
         : new Date(),
+    photoUrl: (data.photoUrl as string) || undefined,
+    tagline: (data.tagline as string) || undefined,
+    bio: (data.bio as string) || undefined,
   };
 }
 
