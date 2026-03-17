@@ -261,9 +261,9 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-gray-900 overflow-hidden">
+    <div className="flex h-dvh flex-col bg-gray-900 overflow-hidden">
       {/* Header */}
-      <header className="sticky top-0 z-30 flex items-center justify-between bg-gray-900/95 backdrop-blur px-4 py-3">
+      <header className="shrink-0 z-30 flex items-center justify-between bg-gray-900/95 backdrop-blur px-4 py-3">
         <Link
           href="/"
           className="flex items-center gap-1.5 text-sm font-medium text-gray-300 hover:text-white transition-colors"
@@ -323,7 +323,7 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
 
       {/* Page image area */}
       <div
-        className="relative flex flex-1 items-center justify-center"
+        className="relative flex flex-1 min-h-0 items-center justify-center"
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
@@ -428,7 +428,7 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
       </div>
 
       {/* Page slider bar */}
-      <div className="sticky bottom-0 z-30 bg-gray-900/95 backdrop-blur border-t border-gray-700">
+      <div className="shrink-0 z-30 bg-gray-900/95 backdrop-blur border-t border-gray-700">
         {/* Slider toggle & slider */}
         <div className="flex items-center gap-3 px-4 pt-2 pb-1">
           <span className="text-xs text-gray-500 shrink-0 w-6 text-right">1</span>
