@@ -12,6 +12,26 @@ import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/client';
 import { UserProfile } from '@/types';
 
+// localStorage へのアカウント保存（AuthContext内で直接操作）
+const STORAGE_KEY = 'scoutbooks_accounts';
+function saveAccountToStorage(email: string, name: string, role: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    const accounts: Array<{ email: string; name: string; role: string }> =
+      JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
+    const idx = accounts.findIndex((a) => a.email === email);
+    const entry = { email, name, role };
+    if (idx >= 0) {
+      accounts[idx] = entry;
+    } else {
+      accounts.push(entry);
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
+  } catch {
+    // localStorage 利用不可の環境は無視
+  }
+}
+
 interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
@@ -42,13 +62,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           if (docSnap.exists()) {
             const data = docSnap.data();
-            setUserProfile({
+            const profile: UserProfile = {
               id: firebaseUser.uid,
               name: data.name ?? '',
               email: data.email ?? firebaseUser.email ?? '',
               role: data.role ?? 'member',
               createdAt: data.createdAt?.toDate() ?? new Date(),
-            } as UserProfile);
+            };
+            setUserProfile(profile);
+            // ログインするたびにアカウント一覧を更新
+            saveAccountToStorage(profile.email, profile.name, profile.role);
           } else {
             setUserProfile(null);
           }

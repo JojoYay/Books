@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import LogoutButton from '@/components/LogoutButton';
+import AccountSwitcher from '@/components/AccountSwitcher';
 
 interface NavLink {
   href: string;
@@ -99,17 +100,14 @@ export default function AppLayout({
               })}
             </nav>
 
-            {/* Right side: user name + logout */}
-            <div className="hidden md:flex items-center gap-3">
+            {/* Right side: account switcher + logout */}
+            <div className="hidden md:flex items-center gap-2">
               {userProfile && (
-                <span className="text-sm text-gray-600">
-                  {userProfile.name}
-                  {isLeader && (
-                    <span className="ml-1.5 inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                      リーダー
-                    </span>
-                  )}
-                </span>
+                <AccountSwitcher
+                  currentEmail={userProfile.email}
+                  currentName={userProfile.name}
+                  isLeader={isLeader}
+                />
               )}
               <LogoutButton />
             </div>
@@ -178,16 +176,13 @@ export default function AppLayout({
                 );
               })}
             </nav>
-            <div className="mt-3 border-t border-gray-100 pt-3 flex items-center justify-between">
+            <div className="mt-3 border-t border-gray-100 pt-3 flex items-center justify-between gap-2">
               {userProfile && (
-                <span className="text-sm text-gray-600">
-                  {userProfile.name}
-                  {isLeader && (
-                    <span className="ml-1.5 inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                      リーダー
-                    </span>
-                  )}
-                </span>
+                <AccountSwitcher
+                  currentEmail={userProfile.email}
+                  currentName={userProfile.name}
+                  isLeader={isLeader}
+                />
               )}
               <LogoutButton />
             </div>
