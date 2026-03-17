@@ -20,7 +20,7 @@ env:
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
     value: 1:1098268309761:web:4ae7ee9b3f19505c87c300
   - variable: NEXT_PUBLIC_APP_URL
-    value: https://books-6b8e0.web.app
+    value: https://scoutbooks--books-6b8e0.asia-east1.hosted.app
   # サーバーサイドの機密値（Secret Manager経由）
   - variable: FIREBASE_PROJECT_ID
     secret: FIREBASE_PROJECT_ID
