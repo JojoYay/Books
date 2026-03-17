@@ -22,46 +22,54 @@ export default function PdfUploader({ bookId, onComplete, onError }: PdfUploader
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState<ProgressState | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
 
   async function processPdf(file: File) {
+    setDetailError(null);
     try {
-      // Dynamic import to avoid SSR issues
+      // Dynamic import（SSR回避）
       const pdfjs = await import('pdfjs-dist');
-      pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
+
+      // ローカルにコピーしたworkerを使用（CDN依存を排除）
+      pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+      const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
       const totalPages = pdf.numPages;
+
+      setProgress({ current: 0, total: totalPages, phase: 'converting' });
 
       // 既存ページを削除
       await deleteAllPages(bookId);
 
       let coverImageUrl = '';
-      const pageUrls: string[] = [];
 
       for (let i = 1; i <= totalPages; i++) {
-        // --- Convert phase ---
+        // --- 変換フェーズ ---
         setProgress({ current: i, total: totalPages, phase: 'converting' });
 
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1.5 });
 
         const canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        const ctx = canvas.getContext('2d')!;
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Canvas context の取得に失敗しました');
 
         await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+        page.cleanup();
 
         const blob = await new Promise<Blob>((resolve, reject) => {
           canvas.toBlob(
-            (b) => (b ? resolve(b) : reject(new Error('Canvas toBlob失敗'))),
+            (b) => (b ? resolve(b) : reject(new Error('JPEG変換に失敗しました'))),
             'image/jpeg',
             0.85
           );
         });
 
-        // --- Upload phase ---
+        // --- アップロードフェーズ ---
         setProgress({ current: i, total: totalPages, phase: 'uploading' });
 
         const path = `books/${bookId}/pages/page_${String(i).padStart(4, '0')}.jpg`;
@@ -69,26 +77,23 @@ export default function PdfUploader({ bookId, onComplete, onError }: PdfUploader
         await uploadBytes(ref, blob, { contentType: 'image/jpeg' });
         const url = await getDownloadURL(ref);
 
-        pageUrls.push(url);
-
-        // Firestoreにページ保存
         await savePage(bookId, i, url);
 
         if (i === 1) coverImageUrl = url;
       }
 
       // 本のドキュメントを更新
-      await updateBook(bookId, {
-        totalPages,
-        coverImageUrl,
-      });
+      await updateBook(bookId, { totalPages, coverImageUrl });
 
       setProgress({ current: totalPages, total: totalPages, phase: 'done' });
       onComplete(totalPages, coverImageUrl);
+
     } catch (err) {
       console.error('PDF処理エラー:', err);
       setProgress(null);
-      onError('PDFの処理中にエラーが発生しました。');
+      const msg = err instanceof Error ? err.message : String(err);
+      setDetailError(msg);
+      onError(`PDFの処理中にエラーが発生しました: ${msg}`);
     }
   }
 
@@ -109,30 +114,23 @@ export default function PdfUploader({ bookId, onComplete, onError }: PdfUploader
   }
 
   const isProcessing = progress !== null && progress.phase !== 'done';
-  const percent = progress
+  const percent = progress && progress.total > 0
     ? Math.round((progress.current / progress.total) * 100)
     : 0;
   const phaseLabel =
-    progress?.phase === 'converting'
-      ? '変換中'
-      : progress?.phase === 'uploading'
-      ? 'アップロード中'
-      : '完了';
+    progress?.phase === 'converting' ? '変換中' :
+    progress?.phase === 'uploading' ? 'アップロード中' : '完了';
 
   return (
     <div className="space-y-3">
-      <label className="block text-sm font-medium text-gray-700">
-        PDFファイル
-      </label>
+      <label className="block text-sm font-medium text-gray-700">PDFファイル</label>
 
       {/* Drop zone */}
       <div
         className={`relative flex min-h-[140px] flex-col items-center justify-center rounded-xl border-2 border-dashed transition-colors ${
-          isDragging
-            ? 'border-green-400 bg-green-50'
-            : isProcessing
-            ? 'border-gray-200 bg-gray-50'
-            : 'border-gray-200 bg-gray-50 hover:border-green-400 hover:bg-green-50 cursor-pointer'
+          isDragging ? 'border-green-400 bg-green-50' :
+          isProcessing ? 'border-gray-200 bg-gray-50' :
+          'border-gray-200 bg-gray-50 hover:border-green-400 hover:bg-green-50 cursor-pointer'
         }`}
         onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
         onDragLeave={() => setIsDragging(false)}
@@ -150,7 +148,6 @@ export default function PdfUploader({ bookId, onComplete, onError }: PdfUploader
 
         {isProcessing ? (
           <div className="w-full px-6 space-y-3">
-            {/* Progress bar */}
             <div className="h-2 w-full rounded-full bg-gray-200">
               <div
                 className="h-2 rounded-full bg-green-500 transition-all duration-300"
@@ -166,9 +163,7 @@ export default function PdfUploader({ bookId, onComplete, onError }: PdfUploader
             <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p className="text-sm font-medium">
-              {progress.total}ページのアップロード完了
-            </p>
+            <p className="text-sm font-medium">{progress.total}ページのアップロード完了</p>
             <button
               type="button"
               className="text-xs text-gray-500 underline"
@@ -187,6 +182,14 @@ export default function PdfUploader({ bookId, onComplete, onError }: PdfUploader
           </div>
         )}
       </div>
+
+      {/* エラー詳細（デバッグ用） */}
+      {detailError && (
+        <details className="rounded-lg bg-red-50 p-3 text-xs text-red-600">
+          <summary className="cursor-pointer font-medium">エラー詳細（隊長向け）</summary>
+          <pre className="mt-2 whitespace-pre-wrap break-all">{detailError}</pre>
+        </details>
+      )}
 
       <p className="text-xs text-gray-400">
         ※ PDFの各ページがJPEG画像に変換されてアップロードされます。大きなファイルは時間がかかります。
