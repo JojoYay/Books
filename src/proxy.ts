@@ -23,6 +23,8 @@ export function proxy(request: NextRequest) {
 
   if (!session?.value) {
     const loginUrl = new URL('/login', request.url);
+    const { pathname, search } = request.nextUrl;
+    loginUrl.searchParams.set('next', pathname + search);
     return NextResponse.redirect(loginUrl);
   }
 

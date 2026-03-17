@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
 
@@ -21,6 +21,8 @@ function getErrorMessage(code: string): string {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams.get('next');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export default function LoginPage() {
         throw new Error('セッションの作成に失敗しました。');
       }
 
-      router.push('/');
+      router.push(nextUrl && nextUrl.startsWith('/') ? nextUrl : '/');
       router.refresh();
     } catch (err: unknown) {
       const code = (err as { code?: string }).code ?? '';
