@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getMemos, deleteMemo } from '@/lib/firestore/memos';
 import { getBook } from '@/lib/firestore/books';
 import { Memo, Book } from '@/types';
+import { LinkifiedText } from '@/components/LinkifiedText';
 
 interface MemoWithBook extends Memo {
   bookTitle: string;
@@ -211,12 +212,11 @@ export default function MemosPage() {
                           {formatDate(memo.updatedAt)}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed">
-                        {memo.text || (
-                          <span className="text-gray-400 italic">
-                            （空のメモ）
-                          </span>
-                        )}
+                      <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed break-words">
+                        {memo.text
+                          ? <LinkifiedText text={memo.text} />
+                          : <span className="text-gray-400 italic">（空のメモ）</span>
+                        }
                       </p>
                     </Link>
 

@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getBooks } from '@/lib/firestore/books';
 import { getAchievementRate } from '@/lib/firestore/submissions';
 import { Book } from '@/types';
+import { LinkifiedText } from '@/components/LinkifiedText';
 
 interface BookWithProgress extends Book {
   achievementRate: number | null;
@@ -95,8 +96,8 @@ function BookCard({ book }: { book: BookWithProgress }) {
           {book.title}
         </h2>
         {book.description && (
-          <p className="text-sm text-gray-500 line-clamp-2 flex-1">
-            {book.description}
+          <p className="text-sm text-gray-500 line-clamp-2 flex-1 break-words">
+            <LinkifiedText text={book.description} />
           </p>
         )}
         <div className="mt-auto flex items-center justify-between pt-2">

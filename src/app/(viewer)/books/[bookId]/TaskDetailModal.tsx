@@ -5,6 +5,7 @@ import { Task, TaskSubmission } from '@/types';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/lib/firebase/client';
 import { createOrUpdateSubmission, completeSubmission } from '@/lib/firestore/submissions';
+import { LinkifiedText } from '@/components/LinkifiedText';
 
 interface TaskDetailModalProps {
   task: Task;
@@ -200,8 +201,8 @@ export default function TaskDetailModal({
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
           {/* Description */}
           {task.description && (
-            <div className="rounded-xl bg-gray-50 p-3 text-sm text-gray-700">
-              {task.description}
+            <div className="rounded-xl bg-gray-50 p-3 text-sm text-gray-700 whitespace-pre-wrap break-words">
+              <LinkifiedText text={task.description} />
             </div>
           )}
 
@@ -224,8 +225,8 @@ export default function TaskDetailModal({
                 </p>
               )}
               {submission?.leaderFeedback && (
-                <p className="text-xs text-green-700 mt-1">
-                  コメント: {submission.leaderFeedback}
+                <p className="text-xs text-green-700 mt-1 whitespace-pre-wrap break-words">
+                  コメント: <LinkifiedText text={submission.leaderFeedback} />
                 </p>
               )}
             </div>
@@ -290,8 +291,8 @@ export default function TaskDetailModal({
               <p className="mb-1 text-sm font-medium text-gray-700">
                 提出コメント
               </p>
-              <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-700">
-                {submission.comment}
+              <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-700 whitespace-pre-wrap break-words">
+                <LinkifiedText text={submission.comment} />
               </p>
             </div>
           )}

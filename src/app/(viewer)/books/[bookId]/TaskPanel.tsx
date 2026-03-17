@@ -3,6 +3,7 @@
 import { Task, TaskSubmission } from '@/types';
 import TaskDetailModal from './TaskDetailModal';
 import { useState } from 'react';
+import { LinkifiedText } from '@/components/LinkifiedText';
 
 interface TaskPanelProps {
   tasks: Task[];
@@ -132,8 +133,8 @@ export default function TaskPanel({
                         {task.title}
                       </p>
                       {task.description && (
-                        <p className="mt-0.5 text-sm text-gray-500 line-clamp-2">
-                          {task.description}
+                        <p className="mt-0.5 text-sm text-gray-500 line-clamp-2 break-words">
+                          <LinkifiedText text={task.description} />
                         </p>
                       )}
                     </div>

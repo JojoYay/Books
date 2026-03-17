@@ -8,6 +8,7 @@ import { getBooks, updateBook, deleteBook } from '@/lib/firestore/books';
 import { getAllMembers } from '@/lib/firestore/users';
 import { Book, UserProfile } from '@/types';
 import BookFormModal from './BookFormModal';
+import { LinkifiedText } from '@/components/LinkifiedText';
 
 export default function AdminBooksPage() {
   const { user, isLeader, loading } = useAuth();
@@ -168,7 +169,9 @@ export default function AdminBooksPage() {
                   <span>隊員 {book.assignedMembers.length} 人</span>
                 </div>
                 {book.description && (
-                  <p className="mt-2 text-xs text-gray-500 line-clamp-2">{book.description}</p>
+                  <p className="mt-2 text-xs text-gray-500 line-clamp-2 break-words">
+                    <LinkifiedText text={book.description} />
+                  </p>
                 )}
 
                 {/* Actions */}

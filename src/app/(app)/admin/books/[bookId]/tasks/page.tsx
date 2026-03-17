@@ -11,6 +11,7 @@ import {
   deleteTask,
 } from '@/lib/firestore/tasks';
 import { Book, Task } from '@/types';
+import { LinkifiedText } from '@/components/LinkifiedText';
 
 interface TaskFormData {
   pageNumber: number;
@@ -316,7 +317,9 @@ export default function BookTasksPage() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-900">{task.title}</p>
                   {task.description && (
-                    <p className="mt-0.5 text-sm text-gray-500">{task.description}</p>
+                    <p className="mt-0.5 text-sm text-gray-500 whitespace-pre-wrap break-words">
+                      <LinkifiedText text={task.description} />
+                    </p>
                   )}
                   <p className="mt-0.5 text-xs text-gray-400">
                     順序: {task.order}
