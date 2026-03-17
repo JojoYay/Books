@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { getBooks, updateBook } from '@/lib/firestore/books';
+import { getBooks, updateBook, deleteBook } from '@/lib/firestore/books';
 import { getAllMembers } from '@/lib/firestore/users';
 import { Book, UserProfile } from '@/types';
 import BookFormModal from './BookFormModal';
@@ -21,6 +21,10 @@ export default function AdminBooksPage() {
   // 本追加・編集モーダル
   const [showBookModal, setShowBookModal] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+
+  // 削除確認
+  const [deletingBook, setDeletingBook] = useState<Book | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
   // 隊員割り当てモーダル
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -71,6 +75,21 @@ export default function AdminBooksPage() {
     setAssigningBook(book);
     setAssignSelected(new Set(book.assignedMembers));
     setShowAssignModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingBook) return;
+    try {
+      setDeleteSubmitting(true);
+      await deleteBook(deletingBook.id);
+      setDeletingBook(null);
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+      alert('削除に失敗しました。');
+    } finally {
+      setDeleteSubmitting(false);
+    }
   };
 
   const handleAssignSave = async () => {
@@ -174,6 +193,13 @@ export default function AdminBooksPage() {
                   >
                     隊員割り当て
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeletingBook(book)}
+                    className="rounded-lg border border-red-200 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    削除
+                  </button>
                 </div>
               </div>
             </div>
@@ -245,6 +271,46 @@ export default function AdminBooksPage() {
                 className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors disabled:opacity-60"
               >
                 {assignSubmitting ? '保存中...' : '保存'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 削除確認ダイアログ */}
+      {deletingBook && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+              </div>
+              <h2 className="text-lg font-bold text-gray-900">本を削除しますか？</h2>
+            </div>
+            <p className="mb-1 text-sm text-gray-600">
+              「<span className="font-medium">{deletingBook.title}</span>」を削除します。
+            </p>
+            <p className="mb-6 text-xs text-red-500">
+              ※ ページ画像・課題・提出データはStorageやFirestoreに残ります。完全削除は手動で行ってください。
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeletingBook(null)}
+                disabled={deleteSubmitting}
+                className="rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                disabled={deleteSubmitting}
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-60"
+              >
+                {deleteSubmitting ? '削除中...' : '削除する'}
               </button>
             </div>
           </div>
