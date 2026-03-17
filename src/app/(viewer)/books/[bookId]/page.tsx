@@ -2,13 +2,12 @@
 
 import { useEffect, useState, useCallback, useRef, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { getBook } from '@/lib/firestore/books';
-import { getPages } from '@/lib/firestore/pages';
 import { getTasksByPage } from '@/lib/firestore/tasks';
 import { getSubmission } from '@/lib/firestore/submissions';
 import {
@@ -243,7 +242,7 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-900">
+    <div className="flex h-screen flex-col bg-gray-900 overflow-hidden">
       {/* Header */}
       <header className="sticky top-0 z-30 flex items-center justify-between bg-gray-900/95 backdrop-blur px-4 py-3">
         <Link
@@ -310,17 +309,29 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
         )}
 
         {!offline && pageData?.imageUrl && !imageError && (
-          <div className="relative w-full max-w-2xl mx-auto">
-            <Image
-              src={pageData.imageUrl}
-              alt={`ページ ${currentPage}`}
-              width={800}
-              height={1130}
-              className="w-full h-auto"
-              priority
-              onError={() => setImageError(true)}
-            />
-          </div>
+          <TransformWrapper
+            key={currentPage}
+            initialScale={1}
+            minScale={0.5}
+            maxScale={5}
+            centerOnInit
+            wheel={{ step: 0.1 }}
+            panning={{ excluded: [] }}
+          >
+            <TransformComponent
+              wrapperStyle={{ width: '100%', height: '100%' }}
+              contentStyle={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={pageData.imageUrl}
+                alt={`ページ ${currentPage}`}
+                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', userSelect: 'none' }}
+                onError={() => setImageError(true)}
+                draggable={false}
+              />
+            </TransformComponent>
+          </TransformWrapper>
         )}
 
         {!offline && (!pageData?.imageUrl || imageError) && !pageLoading && (
@@ -620,6 +631,7 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
           tasks={tasks}
           submissions={submissions}
           currentUserId={user.uid}
+          bookId={bookId}
           memberName={userProfile?.name}
           bookTitle={book.title}
           isLeader={isLeader}

@@ -19,6 +19,7 @@ function toSubmission(
   return {
     id,
     taskId: (data.taskId as string) ?? '',
+    bookId: (data.bookId as string) ?? '',
     memberId: (data.memberId as string) ?? '',
     photos: (data.photos as string[]) ?? [],
     files: (data.files as string[]) ?? [],

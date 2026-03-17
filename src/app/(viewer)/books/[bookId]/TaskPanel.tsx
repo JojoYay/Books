@@ -8,6 +8,7 @@ interface TaskPanelProps {
   tasks: Task[];
   submissions: TaskSubmission[];
   currentUserId: string;
+  bookId: string;
   memberName?: string;
   bookTitle?: string;
   isLeader: boolean;
@@ -46,6 +47,7 @@ export default function TaskPanel({
   tasks,
   submissions,
   currentUserId,
+  bookId,
   memberName,
   bookTitle,
   isLeader,
@@ -152,6 +154,7 @@ export default function TaskPanel({
             submissions.find((s) => s.taskId === selectedTask.id) ?? null
           }
           currentUserId={currentUserId}
+          bookId={bookId}
           memberName={memberName}
           bookTitle={bookTitle}
           isLeader={isLeader}

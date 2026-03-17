@@ -42,6 +42,7 @@ export type TaskStatus = "not_started" | "submitted" | "completed";
 export interface TaskSubmission {
   id: string;
   taskId: string;
+  bookId: string;     // 達成率クエリに必要
   memberId: string;
   photos: string[];   // Storage URLs
   files: string[];    // Storage URLs

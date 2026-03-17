@@ -10,6 +10,7 @@ interface TaskDetailModalProps {
   task: Task;
   submission: TaskSubmission | null;
   currentUserId: string;
+  bookId: string;
   memberName?: string;
   bookTitle?: string;
   isLeader: boolean;
@@ -21,6 +22,7 @@ export default function TaskDetailModal({
   task,
   submission,
   currentUserId,
+  bookId,
   memberName,
   bookTitle,
   isLeader,
@@ -81,6 +83,7 @@ export default function TaskDetailModal({
 
       await createOrUpdateSubmission({
         taskId: task.id,
+        bookId,
         memberId: currentUserId,
         photos: [...existingPhotos, ...uploadedPhotos],
         files: [...existingFiles, ...uploadedFiles],

@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 認証済みユーザーのみアクセス可能
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // ユーザー自身かどうか
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // 隊長かどうか（Firestoreのロールで判定）
+    function isLeader() {
+      return isAuth() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'leader';
+    }
+
+    // ユーザードキュメント
+    match /users/{userId} {
+      allow read: if isAuth();
+      allow create: if isLeader();
+      allow update: if isLeader() || isOwner(userId);
+      allow delete: if isLeader();
+    }
+
+    // 本
+    match /books/{bookId} {
+      allow read: if isAuth();
+      allow write: if isLeader();
+
+      // ページ（サブコレクション）
+      match /pages/{pageId} {
+        allow read: if isAuth();
+        allow write: if isLeader();
+      }
+    }
+
+    // 課題
+    match /tasks/{taskId} {
+      allow read: if isAuth();
+      allow write: if isLeader();
+    }
+
+    // 課題提出
+    match /taskSubmissions/{submissionId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update: if isAuth();
+      allow delete: if isLeader();
+    }
+
+    // しおり
+    match /bookmarks/{userId}/bookmarks/{bookmarkId} {
+      allow read, write: if isAuth() && isOwner(userId);
+    }
+
+    // メモ
+    match /memos/{userId}/memos/{memoId} {
+      allow read, write: if isAuth() && isOwner(userId);
+    }
+
+    // アプリ設定（親PINなど）
+    match /settings/{docId} {
+      allow read: if isAuth();
+      allow write: if isLeader();
+    }
+  }
+}
