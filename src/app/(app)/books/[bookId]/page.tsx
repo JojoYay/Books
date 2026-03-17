@@ -4,10 +4,11 @@ import { useEffect, useState, useCallback, useRef, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { doc, getDoc, collection } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { getBook } from '@/lib/firestore/books';
+import { getPages } from '@/lib/firestore/pages';
 import { getTasksByPage } from '@/lib/firestore/tasks';
 import { getSubmission } from '@/lib/firestore/submissions';
 import {
@@ -83,11 +84,8 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
       setOffline(false);
 
       try {
-        // Page image
-        const pageRef = doc(
-          collection(db, 'pages', bookId, 'pages'),
-          String(pageNum)
-        );
+        // Page image - 正しいパス: books/{bookId}/pages/{pageNum}
+        const pageRef = doc(db, 'books', bookId, 'pages', String(pageNum));
         const pageSnap = await getDoc(pageRef);
         if (pageSnap.exists()) {
           const data = pageSnap.data() as { imageUrl?: string };
