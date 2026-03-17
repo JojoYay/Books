@@ -41,6 +41,12 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
   const [offline, setOffline] = useState(false);
   const [imageError, setImageError] = useState(false);
 
+  // Page slider
+  const [sliderValue, setSliderValue] = useState(
+    Number(searchParams.get('page') ?? '1')
+  );
+  const [showSlider, setShowSlider] = useState(false);
+
   // Tasks
   const [tasks, setTasks] = useState<Task[]>([]);
   const [submissions, setSubmissions] = useState<TaskSubmission[]>([]);
@@ -142,6 +148,7 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
     if (!book) return;
     const clamped = Math.max(1, Math.min(book.totalPages, page));
     setCurrentPage(clamped);
+    setSliderValue(clamped);
     setShowTaskPanel(false);
     setShowMemoPanel(false);
   }
@@ -360,8 +367,68 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
         )}
       </div>
 
+      {/* Page slider bar */}
+      <div className="sticky bottom-0 z-30 bg-gray-900/95 backdrop-blur border-t border-gray-700">
+        {/* Slider toggle & slider */}
+        <div className="flex items-center gap-3 px-4 pt-2 pb-1">
+          <span className="text-xs text-gray-500 shrink-0 w-6 text-right">1</span>
+          <div className="relative flex-1">
+            <input
+              type="range"
+              min={1}
+              max={book.totalPages || 1}
+              value={sliderValue}
+              onChange={(e) => setSliderValue(Number(e.target.value))}
+              onMouseUp={(e) => goToPage(Number((e.target as HTMLInputElement).value))}
+              onTouchEnd={(e) => goToPage(Number((e.target as HTMLInputElement).value))}
+              onKeyUp={(e) => goToPage(Number((e.target as HTMLInputElement).value))}
+              className="w-full h-1.5 rounded-full appearance-none cursor-pointer
+                bg-gray-600
+                [&::-webkit-slider-thumb]:appearance-none
+                [&::-webkit-slider-thumb]:w-5
+                [&::-webkit-slider-thumb]:h-5
+                [&::-webkit-slider-thumb]:rounded-full
+                [&::-webkit-slider-thumb]:bg-green-400
+                [&::-webkit-slider-thumb]:shadow-md
+                [&::-webkit-slider-thumb]:cursor-grab
+                [&::-moz-range-thumb]:w-5
+                [&::-moz-range-thumb]:h-5
+                [&::-moz-range-thumb]:rounded-full
+                [&::-moz-range-thumb]:bg-green-400
+                [&::-moz-range-thumb]:border-0"
+              style={{
+                background: `linear-gradient(to right, #4ade80 0%, #4ade80 ${
+                  ((sliderValue - 1) / Math.max(book.totalPages - 1, 1)) * 100
+                }%, #4b5563 ${
+                  ((sliderValue - 1) / Math.max(book.totalPages - 1, 1)) * 100
+                }%, #4b5563 100%)`,
+              }}
+              aria-label="ページスライダー"
+            />
+            {/* Page preview bubble */}
+            {sliderValue !== currentPage && (
+              <div
+                className="pointer-events-none absolute -top-8 flex items-center justify-center"
+                style={{
+                  left: `calc(${
+                    ((sliderValue - 1) / Math.max(book.totalPages - 1, 1)) * 100
+                  }% )`,
+                  transform: 'translateX(-50%)',
+                }}
+              >
+                <span className="rounded-lg bg-green-500 px-2 py-0.5 text-xs font-bold text-white shadow-lg whitespace-nowrap">
+                  {sliderValue}
+                </span>
+              </div>
+            )}
+          </div>
+          <span className="text-xs text-gray-500 shrink-0 w-6">
+            {book.totalPages}
+          </span>
+        </div>
+
       {/* Bottom toolbar */}
-      <div className="sticky bottom-0 z-30 flex items-center justify-between bg-gray-900/95 backdrop-blur border-t border-gray-700 px-4 py-3 gap-2">
+      <div className="flex items-center justify-between px-4 py-3 gap-2">
         {/* Prev button */}
         <button
           type="button"
@@ -493,6 +560,7 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
           </svg>
         </button>
       </div>
+      </div>{/* /sticky slider+toolbar wrapper */}
 
       {/* Memo panel (slide-up) */}
       {showMemoPanel && (
