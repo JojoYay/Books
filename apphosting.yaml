@@ -1,0 +1,32 @@
+runConfig:
+  cpu: 1
+  memoryMiB: 512
+  concurrency: 80
+  minInstances: 0
+  maxInstances: 2
+
+env:
+  # フロントエンド公開値（そのまま設定）
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyCZoZuLe5HtQEjElyn4Tsj3iRUV_ysS6lk
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: books-6b8e0.firebaseapp.com
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: books-6b8e0
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: books-6b8e0.firebasestorage.app
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "1098268309761"
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: 1:1098268309761:web:4ae7ee9b3f19505c87c300
+  - variable: NEXT_PUBLIC_APP_URL
+    value: https://books-6b8e0.web.app
+  # サーバーサイドの機密値（Secret Manager経由）
+  - variable: FIREBASE_PROJECT_ID
+    secret: FIREBASE_PROJECT_ID
+  - variable: FIREBASE_CLIENT_EMAIL
+    secret: FIREBASE_CLIENT_EMAIL
+  - variable: FIREBASE_PRIVATE_KEY
+    secret: FIREBASE_PRIVATE_KEY
+  - variable: RESEND_API_KEY
+    secret: RESEND_API_KEY
