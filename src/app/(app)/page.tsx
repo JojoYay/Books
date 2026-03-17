@@ -196,7 +196,7 @@ export default function HomePage() {
         </div>
         {isLeader && (
           <Link
-            href="/admin/books/new"
+            href="/admin/books"
             className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700 transition-colors"
           >
             <svg
