@@ -6,11 +6,12 @@ import { UserRole } from '@/types';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, password, role } = body as {
+    const { name, email, password, role, birthday } = body as {
       name?: string;
       email?: string;
       password?: string;
       role?: string;
+      birthday?: string;
     };
 
     // Validation
@@ -48,6 +49,7 @@ export async function POST(req: NextRequest) {
       email,
       role: role as UserRole,
       createdAt: Timestamp.now(),
+      ...(birthday ? { birthday } : {}),
     });
 
     return NextResponse.json({ success: true, userId: userRecord.uid });

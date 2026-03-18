@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAllUsers, updateUser } from '@/lib/firestore/users';
 import { UserProfile, UserRole } from '@/types';
+import { calcSchoolGrade, gradeBadgeClass } from '@/lib/utils/school-grade';
 
 interface CreateUserForm {
   name: string;
   email: string;
   password: string;
   role: UserRole;
+  birthday: string;
 }
 
 const roleLabel: Record<UserRole, string> = {
@@ -36,6 +38,7 @@ export default function AdminMembersPage() {
     email: '',
     password: '',
     role: 'member',
+    birthday: '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -95,7 +98,7 @@ export default function AdminMembersPage() {
       }
 
       setShowModal(false);
-      setForm({ name: '', email: '', password: '', role: 'member' });
+      setForm({ name: '', email: '', password: '', role: 'member', birthday: '' });
       await fetchUsers();
     } catch (err) {
       console.error(err);
@@ -199,8 +202,21 @@ export default function AdminMembersPage() {
                     >
                       {roleLabel[u.role]}
                     </span>
+                    {u.birthday && (() => {
+                      const grade = calcSchoolGrade(u.birthday);
+                      return grade ? (
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${gradeBadgeClass(grade.level)}`}>
+                          {grade.label}
+                        </span>
+                      ) : null;
+                    })()}
                   </div>
                   <p className="mt-0.5 text-sm text-gray-500 truncate">{u.email}</p>
+                  {u.birthday && (
+                    <p className="mt-0 text-xs text-gray-400">
+                      誕生日: {new Date(u.birthday).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </p>
+                  )}
                 </div>
 
                 <button
@@ -269,6 +285,18 @@ export default function AdminMembersPage() {
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                   placeholder="6文字以上"
                   minLength={6}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  誕生日
+                </label>
+                <input
+                  type="date"
+                  value={form.birthday}
+                  onChange={(e) => setForm({ ...form, birthday: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                 />
               </div>
 

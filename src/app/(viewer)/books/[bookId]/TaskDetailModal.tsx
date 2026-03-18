@@ -220,7 +220,7 @@ export default function TaskDetailModal({
                 <p className="text-xs text-green-700">
                   確認者:{' '}
                   {submission.completedBy === 'parent'
-                    ? '保護者'
+                    ? '指導者・保護者'
                     : `リーダー (${submission.completedBy})`}
                 </p>
               )}
@@ -426,12 +426,12 @@ export default function TaskDetailModal({
                   onClick={() => setShowPinInput(true)}
                   className="w-full rounded-xl border border-gray-200 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 >
-                  保護者確認
+                  指導者・保護者確認
                 </button>
               ) : (
                 <div className="space-y-3">
                   <p className="text-sm font-medium text-gray-700">
-                    保護者PINを入力してください
+                    指導者・保護者PINを入力してください
                   </p>
                   <input
                     type="password"

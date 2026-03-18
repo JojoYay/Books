@@ -10,6 +10,7 @@ import {
   getSubmissionsByBook,
 } from '@/lib/firestore/submissions';
 import { Book, Task, TaskSubmission, UserProfile } from '@/types';
+import { calcSchoolGrade, gradeBadgeClass } from '@/lib/utils/school-grade';
 
 interface MemberBookStat {
   book: Book;
@@ -305,6 +306,14 @@ export default function DashboardPage() {
                             />
                           </svg>
                           {row.member.name}
+                          {row.member.birthday && (() => {
+                            const grade = calcSchoolGrade(row.member.birthday!);
+                            return grade ? (
+                              <span className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${gradeBadgeClass(grade.level)}`}>
+                                {grade.label}
+                              </span>
+                            ) : null;
+                          })()}
                           {row.pendingReviewCount > 0 && (
                             <span className="rounded-full bg-yellow-100 px-1.5 py-0.5 text-xs text-yellow-700">
                               {row.pendingReviewCount}
@@ -398,6 +407,14 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-gray-900">{row.member.name}</span>
+                      {row.member.birthday && (() => {
+                        const grade = calcSchoolGrade(row.member.birthday!);
+                        return grade ? (
+                          <span className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${gradeBadgeClass(grade.level)}`}>
+                            {grade.label}
+                          </span>
+                        ) : null;
+                      })()}
                       {row.pendingReviewCount > 0 && (
                         <span className="rounded-full bg-yellow-100 px-1.5 py-0.5 text-xs text-yellow-700">
                           確認待ち {row.pendingReviewCount} 件

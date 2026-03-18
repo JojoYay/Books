@@ -5,7 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { getBooks } from '@/lib/firestore/books';
-import { getAchievementRate } from '@/lib/firestore/submissions';
+import { getAchievementRate, getSubmissionsByBook } from '@/lib/firestore/submissions';
+import { getTasksByBook } from '@/lib/firestore/tasks';
 import { Book } from '@/types';
 import { LinkifiedText } from '@/components/LinkifiedText';
 
@@ -30,8 +31,9 @@ function BookCardSkeleton() {
   );
 }
 
-function AchievementBadge({ rate }: { rate: number | null }) {
+function AchievementBadge({ rate, isLeader }: { rate: number | null; isLeader?: boolean }) {
   if (rate === null) {
+    if (isLeader) return null;
     return (
       <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500">
         集計中
@@ -55,73 +57,134 @@ function AchievementBadge({ rate }: { rate: number | null }) {
   );
 }
 
-function BookCard({ book }: { book: BookWithProgress }) {
-  return (
-    <Link
-      href={`/books/${book.id}`}
-      className="group flex flex-col rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden"
-    >
-      {/* Cover image */}
-      <div className="relative aspect-[3/4] bg-gray-100 overflow-hidden">
-        {book.coverImageUrl ? (
-          <Image
-            src={book.coverImageUrl}
-            alt={book.title}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center bg-gradient-to-br from-green-50 to-green-100">
-            <svg
-              className="h-16 w-16 text-green-300"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1}
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
-              />
-            </svg>
-          </div>
-        )}
-      </div>
+function BookCard({
+  book,
+  isLeader,
+  userId,
+  userName,
+}: {
+  book: BookWithProgress;
+  isLeader?: boolean;
+  userId?: string;
+  userName?: string;
+}) {
+  const [downloading, setDownloading] = useState(false);
 
-      {/* Card body */}
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <h2 className="font-semibold text-gray-900 line-clamp-2 group-hover:text-green-700 transition-colors">
-          {book.title}
-        </h2>
-        {book.description && (
-          <p className="text-sm text-gray-500 line-clamp-2 flex-1 break-words">
-            <LinkifiedText text={book.description} />
-          </p>
-        )}
-        <div className="mt-auto flex items-center justify-between pt-2">
-          <span className="text-xs text-gray-400">{book.totalPages}ページ</span>
-          <AchievementBadge rate={book.achievementRate} />
+  async function handleDownloadPdf(e: React.MouseEvent) {
+    e.preventDefault();
+    if (!userId || !userName) return;
+    setDownloading(true);
+    try {
+      const [tasks, submissions] = await Promise.all([
+        getTasksByBook(book.id),
+        getSubmissionsByBook(book.id, userId),
+      ]);
+      const subMap = new Map(submissions.map((s) => [s.taskId, s]));
+      const pdfTasks = tasks.map((task) => ({ task, submission: subMap.get(task.id) ?? null }));
+      const { generateBookPdf } = await import('@/lib/utils/generate-book-pdf');
+      await generateBookPdf(book, userName, pdfTasks);
+    } catch (err) {
+      console.error('PDF生成エラー:', err);
+      alert('PDF生成に失敗しました。もう一度お試しください。');
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  return (
+    <div className="group flex flex-col rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden relative">
+      <Link href={`/books/${book.id}`} className="flex flex-col flex-1">
+        {/* Cover image */}
+        <div className="relative aspect-[3/4] bg-gray-100 overflow-hidden">
+          {book.coverImageUrl ? (
+            <Image
+              src={book.coverImageUrl}
+              alt={book.title}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center bg-gradient-to-br from-green-50 to-green-100">
+              <svg
+                className="h-16 w-16 text-green-300"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
+                />
+              </svg>
+            </div>
+          )}
         </div>
 
-        {/* Progress bar */}
-        {book.achievementRate !== null && (
-          <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${
-                book.achievementRate >= 80
-                  ? 'bg-green-500'
-                  : book.achievementRate >= 50
-                  ? 'bg-yellow-400'
-                  : 'bg-gray-300'
-              }`}
-              style={{ width: `${book.achievementRate}%` }}
-            />
+        {/* Card body */}
+        <div className="flex flex-1 flex-col gap-2 p-4">
+          <h2 className="font-semibold text-gray-900 line-clamp-2 group-hover:text-green-700 transition-colors">
+            {book.title}
+          </h2>
+          {book.description && (
+            <p className="text-sm text-gray-500 line-clamp-2 flex-1 break-words">
+              <LinkifiedText text={book.description} />
+            </p>
+          )}
+          <div className="mt-auto flex items-center justify-between pt-2">
+            <span className="text-xs text-gray-400">{book.totalPages}ページ</span>
+            <AchievementBadge rate={book.achievementRate} isLeader={isLeader} />
           </div>
-        )}
-      </div>
-    </Link>
+
+          {/* Progress bar */}
+          {book.achievementRate !== null && (
+            <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  book.achievementRate >= 80
+                    ? 'bg-green-500'
+                    : book.achievementRate >= 50
+                    ? 'bg-yellow-400'
+                    : 'bg-gray-300'
+                }`}
+                style={{ width: `${book.achievementRate}%` }}
+              />
+            </div>
+          )}
+        </div>
+      </Link>
+
+      {/* PDF Download button — member only */}
+      {!isLeader && userId && (
+        <div className="border-t border-gray-100 px-4 py-2.5">
+          <button
+            type="button"
+            onClick={handleDownloadPdf}
+            disabled={downloading}
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-green-700 disabled:opacity-50 transition-colors"
+          >
+            {downloading ? (
+              <>
+                <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                PDF生成中...
+              </>
+            ) : (
+              <>
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                課題記録をPDFで保存
+              </>
+            )}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -238,7 +301,13 @@ export default function HomePage() {
       {!loading && books.length > 0 && (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {books.map((book) => (
-            <BookCard key={book.id} book={book} />
+            <BookCard
+              key={book.id}
+              book={book}
+              isLeader={isLeader}
+              userId={user?.uid}
+              userName={userProfile?.name}
+            />
           ))}
         </div>
       )}

@@ -58,7 +58,10 @@
       "Bash(cp /c/ScoutBooks/src/app/\\\\\\(app\\\\\\)/books/[bookId]/TaskDetailModal.tsx /c/ScoutBooks/src/app/\\\\\\(viewer\\\\\\)/books/[bookId]/)",
       "Bash(grep -n \"createOrUpdateSubmission\" /c/ScoutBooks/src/app/\\\\\\(viewer\\\\\\)/books/[bookId]/TaskDetailModal.tsx)",
       "Bash(grep -n \"TaskDetailModal\\\\|bookId\" /c/ScoutBooks/src/app/\\\\\\(viewer\\\\\\)/books/[bookId]/TaskPanel.tsx)",
-      "Bash(grep -n \"TaskPanel\" /c/ScoutBooks/src/app/\\\\\\(viewer\\\\\\)/books/[bookId]/page.tsx)"
+      "Bash(grep -n \"TaskPanel\" /c/ScoutBooks/src/app/\\\\\\(viewer\\\\\\)/books/[bookId]/page.tsx)",
+      "Bash(npx firebase:*)",
+      "Bash(npx playwright:*)",
+      "Bash(npm list:*)"
     ]
   }
 }

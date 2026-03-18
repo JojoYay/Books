@@ -3,6 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import {
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+} from 'firebase/auth';
 import { storage } from '@/lib/firebase/client';
 import { updateUser } from '@/lib/firestore/users';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,19 +20,32 @@ const ROLE_LABEL: Record<string, string> = {
 export default function ProfilePage() {
   const { user, userProfile } = useAuth();
 
+  // Profile fields
+  const [name, setName] = useState('');
+  const [birthday, setBirthday] = useState('');
   const [tagline, setTagline] = useState('');
   const [bio, setBio] = useState('');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  // Password change fields
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordChanged, setPasswordChanged] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   // フォームを現在のプロフィールで初期化
   useEffect(() => {
     if (userProfile) {
+      setName(userProfile.name ?? '');
+      setBirthday(userProfile.birthday ?? '');
       setTagline(userProfile.tagline ?? '');
       setBio(userProfile.bio ?? '');
       setPreviewUrl(userProfile.photoUrl ?? null);
@@ -45,7 +63,7 @@ export default function ProfilePage() {
     if (!user) return;
     setSaving(true);
     setSaved(false);
-    setError(null);
+    setProfileError(null);
 
     try {
       let photoUrl = userProfile?.photoUrl;
@@ -60,9 +78,11 @@ export default function ProfilePage() {
       }
 
       await updateUser(user.uid, {
+        name: name.trim() || (userProfile?.name ?? ''),
         photoUrl: photoUrl ?? '',
         tagline: tagline.trim(),
         bio: bio.trim(),
+        birthday: birthday || undefined,
       });
 
       setSaved(true);
@@ -70,9 +90,53 @@ export default function ProfilePage() {
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       console.error('プロフィール保存エラー:', err);
-      setError('保存に失敗しました。もう一度お試しください。');
+      setProfileError('保存に失敗しました。もう一度お試しください。');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleChangePassword() {
+    if (!user || !user.email) return;
+    setPasswordError(null);
+
+    if (!currentPassword) {
+      setPasswordError('現在のパスワードを入力してください。');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordError('新しいパスワードは6文字以上にしてください。');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('新しいパスワードが一致しません。');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, newPassword);
+      setPasswordChanged(true);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setPasswordChanged(false), 3000);
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code ?? '';
+      if (
+        code === 'auth/wrong-password' ||
+        code === 'auth/invalid-credential'
+      ) {
+        setPasswordError('現在のパスワードが正しくありません。');
+      } else if (code === 'auth/weak-password') {
+        setPasswordError('パスワードが弱すぎます。もっと強いパスワードにしてください。');
+      } else {
+        setPasswordError('パスワードの変更に失敗しました。もう一度お試しください。');
+      }
+    } finally {
+      setChangingPassword(false);
     }
   }
 
@@ -87,7 +151,7 @@ export default function ProfilePage() {
   const avatarSrc = previewUrl;
 
   return (
-    <div className="mx-auto max-w-lg">
+    <div className="mx-auto max-w-lg space-y-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">プロフィール</h1>
         <p className="mt-1 text-sm text-gray-500">
@@ -95,6 +159,7 @@ export default function ProfilePage() {
         </p>
       </div>
 
+      {/* ── プロフィールカード ── */}
       <div className="rounded-2xl bg-white shadow-sm overflow-hidden">
         {/* アバター */}
         <div className="flex flex-col items-center gap-3 bg-gradient-to-br from-green-50 to-emerald-100 px-6 py-8">
@@ -154,17 +219,39 @@ export default function ProfilePage() {
 
         {/* フォーム */}
         <div className="px-6 py-6 space-y-5">
-          {/* 名前（読み取り専用） */}
+          {/* 名前 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="profile-name"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               名前
             </label>
-            <p className="rounded-xl bg-gray-50 px-4 py-2.5 text-sm text-gray-900 border border-gray-200">
-              {userProfile.name}
-            </p>
-            <p className="mt-1 text-xs text-gray-400">
-              名前はリーダーのみ変更できます
-            </p>
+            <input
+              id="profile-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="名前を入力"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+            />
+          </div>
+
+          {/* 誕生日 */}
+          <div>
+            <label
+              htmlFor="profile-birthday"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              誕生日
+            </label>
+            <input
+              id="profile-birthday"
+              type="date"
+              value={birthday}
+              onChange={(e) => setBirthday(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+            />
           </div>
 
           {/* ロール */}
@@ -219,9 +306,9 @@ export default function ProfilePage() {
           </div>
 
           {/* エラー */}
-          {error && (
+          {profileError && (
             <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-              {error}
+              {profileError}
             </div>
           )}
 
@@ -249,6 +336,107 @@ export default function ProfilePage() {
               </span>
             ) : (
               '保存する'
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* ── パスワード変更カード ── */}
+      <div className="rounded-2xl bg-white shadow-sm overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-100">
+          <h2 className="text-base font-semibold text-gray-900">パスワードを変更</h2>
+          <p className="mt-0.5 text-xs text-gray-500">現在のパスワードで本人確認を行います</p>
+        </div>
+        <div className="px-6 py-6 space-y-4">
+          {/* 現在のパスワード */}
+          <div>
+            <label
+              htmlFor="current-password"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              現在のパスワード
+            </label>
+            <input
+              id="current-password"
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="現在のパスワード"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+            />
+          </div>
+
+          {/* 新しいパスワード */}
+          <div>
+            <label
+              htmlFor="new-password"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              新しいパスワード
+              <span className="ml-1 text-xs text-gray-400">（6文字以上）</span>
+            </label>
+            <input
+              id="new-password"
+              type="password"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="新しいパスワード"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+            />
+          </div>
+
+          {/* 確認 */}
+          <div>
+            <label
+              htmlFor="confirm-password"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              新しいパスワード（確認）
+            </label>
+            <input
+              id="confirm-password"
+              type="password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="もう一度入力"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+            />
+          </div>
+
+          {/* エラー */}
+          {passwordError && (
+            <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+              {passwordError}
+            </div>
+          )}
+
+          {/* 変更ボタン */}
+          <button
+            type="button"
+            onClick={handleChangePassword}
+            disabled={changingPassword}
+            className="w-full rounded-xl bg-green-600 py-3 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60 transition-colors"
+          >
+            {changingPassword ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                変更中...
+              </span>
+            ) : passwordChanged ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                変更しました
+              </span>
+            ) : (
+              'パスワードを変更する'
             )}
           </button>
         </div>

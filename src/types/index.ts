@@ -7,9 +7,10 @@ export interface UserProfile {
   email: string;
   role: UserRole;
   createdAt: Date;
-  photoUrl?: string;  // プロフィール写真
-  tagline?: string;   // ひとこと（短文）
-  bio?: string;       // 自己紹介（長文）
+  photoUrl?: string;    // プロフィール写真
+  tagline?: string;     // ひとこと（短文）
+  bio?: string;         // 自己紹介（長文）
+  birthday?: string;    // 誕生日 (YYYY-MM-DD)
 }
 
 // 本
