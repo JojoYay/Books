@@ -261,7 +261,7 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-gray-900 overflow-hidden">
+    <div className="fixed inset-0 flex flex-col bg-gray-900 overflow-hidden">
       {/* Header */}
       <header className="shrink-0 z-30 flex items-center justify-between bg-gray-900/95 backdrop-blur px-4 py-3">
         <Link
