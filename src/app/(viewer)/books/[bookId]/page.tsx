@@ -286,32 +286,9 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
         <h1 className="max-w-[200px] truncate text-sm font-semibold text-white sm:max-w-xs">
           {book.title}
         </h1>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-400">
-            {currentPage} / {book.totalPages}
-          </span>
-          <button
-            type="button"
-            onClick={handleShare}
-            className="flex items-center gap-1 rounded-lg bg-gray-700 px-2.5 py-1.5 text-xs font-medium text-gray-200 hover:bg-gray-600 transition-colors"
-            aria-label="URLを共有"
-          >
-            <svg
-              className="h-3.5 w-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"
-              />
-            </svg>
-            共有
-          </button>
-        </div>
+        <span className="text-sm text-gray-400">
+          {currentPage} / {book.totalPages}
+        </span>
       </header>
 
       {/* Share toast */}
@@ -541,6 +518,29 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
               />
             </svg>
             <span>{bookmarked ? 'しおり済' : 'しおり'}</span>
+          </button>
+
+          {/* Share */}
+          <button
+            type="button"
+            onClick={handleShare}
+            className="flex flex-col items-center gap-0.5 rounded-xl bg-gray-700 px-3 py-2 text-xs font-medium text-gray-300 hover:bg-gray-600 transition-colors"
+            aria-label="URLを共有"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"
+              />
+            </svg>
+            <span>共有</span>
           </button>
 
           {/* Memo */}
