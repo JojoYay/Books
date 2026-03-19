@@ -52,9 +52,16 @@ service cloud.firestore {
       allow delete: if isLeader();
     }
 
-    // しおり
+    // しおり（自分のもの）
     match /bookmarks/{userId}/bookmarks/{bookmarkId} {
       allow read, write: if isAuth() && isOwner(userId);
+    }
+
+    // 共有しおり（全員が読める、作成者のみ更新・削除）
+    match /sharedBookmarks/{bookmarkId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if isAuth() && request.auth.uid == resource.data.userId;
     }
 
     // メモ

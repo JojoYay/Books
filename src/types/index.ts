@@ -65,6 +65,10 @@ export interface Bookmark {
   bookId: string;
   pageNumber: number;
   createdAt: Date;
+  label?: string;                    // しおりの名前（任意）
+  visibility: 'private' | 'shared'; // 自分だけ / みんなと共有
+  userId?: string;                   // 共有しおりに使用
+  userName?: string;                 // 共有しおりに使用
 }
 
 // メモ

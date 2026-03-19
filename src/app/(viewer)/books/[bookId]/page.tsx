@@ -54,6 +54,9 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
   // Bookmark
   const [bookmarked, setBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  const [bookmarkModal, setBookmarkModal] = useState(false);
+  const [bookmarkLabel, setBookmarkLabel] = useState('');
+  const [bookmarkVisibility, setBookmarkVisibility] = useState<'private' | 'shared'>('private');
 
   // Memo
   const [showMemoPanel, setShowMemoPanel] = useState(false);
@@ -178,21 +181,42 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
     touchStartY.current = null;
   }
 
-  // Bookmark toggle
+  // Bookmark toggle — 削除はすぐ実行、追加はモーダルを開く
   async function toggleBookmark() {
     if (!user || bookmarkLoading) return;
-    setBookmarkLoading(true);
-    try {
-      if (bookmarked) {
+    if (bookmarked) {
+      setBookmarkLoading(true);
+      try {
         const bmId = await getBookmarkId(user.uid, bookId, currentPage);
         if (bmId) await removeBookmark(user.uid, bmId);
         setBookmarked(false);
-      } else {
-        await addBookmark(user.uid, { bookId, pageNumber: currentPage });
-        setBookmarked(true);
+      } catch (err) {
+        console.error('しおり削除エラー:', err);
+      } finally {
+        setBookmarkLoading(false);
       }
+    } else {
+      // モーダルを開く
+      setBookmarkLabel('');
+      setBookmarkVisibility('private');
+      setBookmarkModal(true);
+    }
+  }
+
+  async function handleBookmarkSave() {
+    if (!user || bookmarkLoading) return;
+    setBookmarkLoading(true);
+    setBookmarkModal(false);
+    try {
+      await addBookmark(user.uid, userProfile?.name ?? '', {
+        bookId,
+        pageNumber: currentPage,
+        label: bookmarkLabel.trim() || undefined,
+        visibility: bookmarkVisibility,
+      });
+      setBookmarked(true);
     } catch (err) {
-      console.error('しおりエラー:', err);
+      console.error('しおり追加エラー:', err);
     } finally {
       setBookmarkLoading(false);
     }
@@ -667,6 +691,92 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
               className="w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
             >
               {memoSaving ? '保存中...' : '保存する'}
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Bookmark modal */}
+      {bookmarkModal && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/50"
+            onClick={() => setBookmarkModal(false)}
+            aria-hidden="true"
+          />
+          <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-2xl bg-white shadow-xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold text-gray-900">
+                しおりを追加 — {currentPage}ページ
+              </h3>
+              <button
+                type="button"
+                onClick={() => setBookmarkModal(false)}
+                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 transition-colors"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Label input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                名前（任意）
+              </label>
+              <input
+                type="text"
+                value={bookmarkLabel}
+                onChange={(e) => setBookmarkLabel(e.target.value)}
+                placeholder="例: 大切なページ、あとで確認"
+                maxLength={40}
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-yellow-400 focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                autoFocus
+              />
+            </div>
+
+            {/* Visibility */}
+            <div>
+              <p className="block text-sm font-medium text-gray-700 mb-2">公開範囲</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setBookmarkVisibility('private')}
+                  className={`flex flex-col items-center gap-1 rounded-xl border-2 p-3 text-sm font-medium transition-colors ${
+                    bookmarkVisibility === 'private'
+                      ? 'border-yellow-400 bg-yellow-50 text-yellow-700'
+                      : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                  </svg>
+                  自分だけ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBookmarkVisibility('shared')}
+                  className={`flex flex-col items-center gap-1 rounded-xl border-2 p-3 text-sm font-medium transition-colors ${
+                    bookmarkVisibility === 'shared'
+                      ? 'border-green-400 bg-green-50 text-green-700'
+                      : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                  </svg>
+                  みんなと共有
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleBookmarkSave}
+              className="w-full rounded-xl bg-yellow-500 py-3 text-sm font-semibold text-white hover:bg-yellow-600 transition-colors"
+            >
+              しおりを追加
             </button>
           </div>
         </>
