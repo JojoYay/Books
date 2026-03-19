@@ -487,7 +487,6 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
               d="M15.75 19.5L8.25 12l7.5-7.5"
             />
           </svg>
-          前へ
         </button>
 
         {/* Center action buttons */}
@@ -604,7 +603,6 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
           className="flex items-center gap-1.5 rounded-xl bg-gray-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-600 disabled:opacity-40 transition-colors"
           aria-label="次のページ"
         >
-          次へ
           <svg
             className="h-4 w-4"
             fill="none"
