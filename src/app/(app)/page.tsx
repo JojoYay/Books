@@ -5,8 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { getBooks } from '@/lib/firestore/books';
-import { getAchievementRate, getSubmissionsByBook } from '@/lib/firestore/submissions';
-import { getTasksByBook } from '@/lib/firestore/tasks';
+import { getAchievementRate } from '@/lib/firestore/submissions';
 import { Book } from '@/types';
 import { LinkifiedText } from '@/components/LinkifiedText';
 
@@ -68,29 +67,6 @@ function BookCard({
   userId?: string;
   userName?: string;
 }) {
-  const [downloading, setDownloading] = useState(false);
-
-  async function handleDownloadPdf(e: React.MouseEvent) {
-    e.preventDefault();
-    if (!userId || !userName) return;
-    setDownloading(true);
-    try {
-      const [tasks, submissions] = await Promise.all([
-        getTasksByBook(book.id),
-        getSubmissionsByBook(book.id, userId),
-      ]);
-      const subMap = new Map(submissions.map((s) => [s.taskId, s]));
-      const pdfTasks = tasks.map((task) => ({ task, submission: subMap.get(task.id) ?? null }));
-      const { generateBookPdf } = await import('@/lib/utils/generate-book-pdf');
-      await generateBookPdf(book, userName, pdfTasks);
-    } catch (err) {
-      console.error('PDF生成エラー:', err);
-      alert('PDF生成に失敗しました。もう一度お試しください。');
-    } finally {
-      setDownloading(false);
-    }
-  }
-
   return (
     <div className="group flex flex-col rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden relative">
       <Link href={`/books/${book.id}`} className="flex flex-col flex-1">
@@ -156,34 +132,6 @@ function BookCard({
         </div>
       </Link>
 
-      {/* PDF Download button — member only */}
-      {!isLeader && userId && (
-        <div className="border-t border-gray-100 px-4 py-2.5">
-          <button
-            type="button"
-            onClick={handleDownloadPdf}
-            disabled={downloading}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-green-700 disabled:opacity-50 transition-colors"
-          >
-            {downloading ? (
-              <>
-                <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                PDF生成中...
-              </>
-            ) : (
-              <>
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                </svg>
-                課題記録をPDFで保存
-              </>
-            )}
-          </button>
-        </div>
-      )}
     </div>
   );
 }
