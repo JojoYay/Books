@@ -16,7 +16,6 @@ import {
   removeBookmark,
   getBookmarkId,
 } from '@/lib/firestore/bookmarks';
-import { getMemo, saveMemo } from '@/lib/firestore/memos';
 import { Book, BookPage, Task, TaskSubmission } from '@/types';
 import TaskPanel from './TaskPanel';
 
@@ -58,12 +57,6 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
   const [bookmarkLabel, setBookmarkLabel] = useState('');
   const [bookmarkVisibility, setBookmarkVisibility] = useState<'private' | 'shared'>('private');
 
-  // Memo
-  const [showMemoPanel, setShowMemoPanel] = useState(false);
-  const [memoText, setMemoText] = useState('');
-  const [memoId, setMemoId] = useState<string | null>(null);
-  const [memoSaving, setMemoSaving] = useState(false);
-
   // Share
   const [shareToast, setShareToast] = useState(false);
 
@@ -86,7 +79,7 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
     loadBook();
   }, [bookId]);
 
-  // Load page image + tasks + bookmark + memo whenever page changes
+  // Load page image + tasks + bookmark whenever page changes
   const loadPageData = useCallback(
     async (pageNum: number) => {
       if (!user) return;
@@ -121,11 +114,6 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
         // Bookmark status
         const bm = await isBookmarked(user.uid, bookId, pageNum);
         setBookmarked(bm);
-
-        // Memo
-        const memo = await getMemo(user.uid, bookId, pageNum);
-        setMemoText(memo?.text ?? '');
-        setMemoId(memo?.id ?? null);
       } catch (err) {
         console.error('ページ読み込みエラー:', err);
         if (!navigator.onLine) {
@@ -155,7 +143,6 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
     setCurrentPage(clamped);
     setSliderValue(clamped);
     setShowTaskPanel(false);
-    setShowMemoPanel(false);
   }
 
   // Touch gesture handlers
@@ -235,25 +222,6 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
       await navigator.clipboard.writeText(url);
       setShareToast(true);
       setTimeout(() => setShareToast(false), 2000);
-    }
-  }
-
-  // Save memo
-  async function handleSaveMemo() {
-    if (!user) return;
-    setMemoSaving(true);
-    try {
-      const id = await saveMemo(user.uid, {
-        bookId,
-        pageNumber: currentPage,
-        text: memoText,
-      });
-      setMemoId(id);
-      setShowMemoPanel(false);
-    } catch (err) {
-      console.error('メモ保存エラー:', err);
-    } finally {
-      setMemoSaving(false);
     }
   }
 
@@ -566,33 +534,6 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
             <span>共有</span>
           </button>
 
-          {/* Memo */}
-          <button
-            type="button"
-            onClick={() => setShowMemoPanel((prev) => !prev)}
-            className={`flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-xs font-medium transition-colors ${
-              memoText
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-            }`}
-            aria-label="メモ"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-              />
-            </svg>
-            <span>メモ</span>
-          </button>
-
           {/* Task button */}
           {tasks.length > 0 && (
             <button
@@ -643,58 +584,6 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
         </button>
       </div>
       </div>{/* /sticky slider+toolbar wrapper */}
-
-      {/* Memo panel (slide-up) */}
-      {showMemoPanel && (
-        <>
-          <div
-            className="fixed inset-0 z-40 bg-black/40"
-            onClick={() => setShowMemoPanel(false)}
-            aria-hidden="true"
-          />
-          <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-2xl bg-white shadow-xl p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-gray-900">
-                メモ — {currentPage}ページ
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowMemoPanel(false)}
-                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 transition-colors"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-            <textarea
-              value={memoText}
-              onChange={(e) => setMemoText(e.target.value)}
-              rows={5}
-              placeholder="このページのメモを入力..."
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
-            />
-            <button
-              type="button"
-              onClick={handleSaveMemo}
-              disabled={memoSaving}
-              className="w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
-            >
-              {memoSaving ? '保存中...' : '保存する'}
-            </button>
-          </div>
-        </>
-      )}
 
       {/* Bookmark modal */}
       {bookmarkModal && (

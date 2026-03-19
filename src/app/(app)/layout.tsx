@@ -15,7 +15,6 @@ interface NavLink {
 const baseLinks: NavLink[] = [
   { href: '/', label: '本一覧' },
   { href: '/bookmarks', label: 'しおり' },
-  { href: '/memos', label: 'メモ' },
   { href: '/progress', label: '達成率' },
   { href: '/members', label: 'メンバー' },
   { href: '/profile', label: 'プロフィール' },
