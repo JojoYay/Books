@@ -14,6 +14,9 @@ try {
 
 const nextConfig: NextConfig = {
   turbopack: {},
+  env: {
+    NEXT_PUBLIC_BUILD_DATE: new Date().toISOString(),
+  },
   images: {
     remotePatterns: [
       {

@@ -196,6 +196,22 @@ export default function AppLayout({
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {children}
       </main>
+
+      {/* Footer */}
+      <footer className="mt-auto border-t border-gray-100 py-3 text-center">
+        <p className="text-xs text-gray-300">
+          {process.env.NEXT_PUBLIC_BUILD_DATE
+            ? `v${new Date(process.env.NEXT_PUBLIC_BUILD_DATE).toLocaleString('ja-JP', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZone: 'Asia/Tokyo',
+              })}`
+            : ''}
+        </p>
+      </footer>
     </div>
   );
 }
