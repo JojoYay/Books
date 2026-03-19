@@ -13,12 +13,14 @@ interface AccountSwitcherProps {
   currentEmail: string;
   currentName: string;
   isLeader: boolean;
+  dropUp?: boolean;
 }
 
 export default function AccountSwitcher({
   currentEmail,
   currentName,
   isLeader,
+  dropUp = false,
 }: AccountSwitcherProps) {
   const { getAccounts, saveAccount, removeAccount } = useAccountSwitcher();
   const [open, setOpen] = useState(false);
@@ -142,7 +144,7 @@ export default function AccountSwitcher({
 
       {/* ドロップダウンパネル */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-gray-100 bg-white shadow-xl z-50 overflow-hidden">
+        <div className={`absolute right-0 w-72 rounded-2xl border border-gray-100 bg-white shadow-xl z-50 overflow-hidden ${dropUp ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
           {/* ヘッダー */}
           <div className="border-b border-gray-100 px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">

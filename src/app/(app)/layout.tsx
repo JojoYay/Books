@@ -183,6 +183,7 @@ export default function AppLayout({
                   currentEmail={userProfile.email}
                   currentName={userProfile.name}
                   isLeader={isLeader}
+                  dropUp
                 />
               )}
               <LogoutButton />
