@@ -11,6 +11,7 @@ export interface UserProfile {
   tagline?: string;     // ひとこと（短文）
   bio?: string;         // 自己紹介（長文）
   birthday?: string;    // 誕生日 (YYYY-MM-DD)
+  group?: string;       // 組（例: ビーバー組、カブ組など）
 }
 
 // 本

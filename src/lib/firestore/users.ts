@@ -29,6 +29,7 @@ function toUserProfile(
     tagline: (data.tagline as string) || undefined,
     bio: (data.bio as string) || undefined,
     birthday: (data.birthday as string) || undefined,
+    group: (data.group as string) || undefined,
   };
 }
 

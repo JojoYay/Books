@@ -264,6 +264,17 @@ export default function ProfilePage() {
             </p>
           </div>
 
+          {/* 組（リーダーが設定・読み取り専用） */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              組
+              <span className="ml-1 text-xs text-gray-400">（リーダーが設定します）</span>
+            </label>
+            <p className="rounded-xl bg-gray-50 px-4 py-2.5 text-sm border border-gray-200 text-gray-900">
+              {userProfile.group ?? <span className="text-gray-400">未設定</span>}
+            </p>
+          </div>
+
           {/* ひとこと */}
           <div>
             <label
