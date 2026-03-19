@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { getBooks } from '@/lib/firestore/books';
 import { getTasksByBook } from '@/lib/firestore/tasks';
@@ -215,46 +216,49 @@ export default function ProgressPage() {
                           const status: TaskStatus = sub?.status ?? 'not_started';
 
                           return (
-                            <li key={task.id} className="flex items-start gap-3 px-5 py-3">
-                              {/* Status indicator */}
-                              <div className="mt-0.5 flex-shrink-0">
-                                {status === 'completed' ? (
-                                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-500 text-white text-xs">
-                                    ✓
-                                  </span>
-                                ) : status === 'submitted' ? (
-                                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-yellow-400 text-white text-xs">
-                                    →
-                                  </span>
-                                ) : (
-                                  <span className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-gray-300" />
-                                )}
-                              </div>
-
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div>
-                                    <p className="text-sm font-medium text-gray-900">
-                                      {task.title}
-                                    </p>
-                                    <p className="text-xs text-gray-400 mt-0.5">
-                                      p.{task.pageNumber}
-                                    </p>
-                                  </div>
-                                  <span
-                                    className={`flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[status]}`}
-                                  >
-                                    {statusLabel[status]}
-                                  </span>
+                            <li key={task.id}>
+                              <Link
+                                href={`/books/${book.id}?page=${task.pageNumber}`}
+                                className="flex items-start gap-3 px-5 py-3 hover:bg-gray-50 transition-colors group"
+                              >
+                                {/* Status indicator */}
+                                <div className="mt-0.5 flex-shrink-0">
+                                  {status === 'completed' ? (
+                                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-500 text-white text-xs">✓</span>
+                                  ) : status === 'submitted' ? (
+                                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-yellow-400 text-white text-xs">→</span>
+                                  ) : (
+                                    <span className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-gray-300" />
+                                  )}
                                 </div>
 
-                                {sub?.completedAt && (
-                                  <p className="mt-1 text-xs text-gray-400">
-                                    完了日:{' '}
-                                    {sub.completedAt.toLocaleDateString('ja-JP')}
-                                  </p>
-                                )}
-                              </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-900 group-hover:text-green-700 transition-colors">
+                                        {task.title}
+                                      </p>
+                                      <p className="text-xs text-gray-400 mt-0.5">
+                                        p.{task.pageNumber}
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[status]}`}>
+                                        {statusLabel[status]}
+                                      </span>
+                                      <svg className="h-3.5 w-3.5 text-gray-300 group-hover:text-green-500 transition-colors" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                      </svg>
+                                    </div>
+                                  </div>
+
+                                  {sub?.completedAt && (
+                                    <p className="mt-1 text-xs text-gray-400">
+                                      完了日: {sub.completedAt.toLocaleDateString('ja-JP')}
+                                    </p>
+                                  )}
+                                </div>
+                              </Link>
                             </li>
                           );
                         })}
