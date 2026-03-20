@@ -115,6 +115,15 @@ export async function completeSubmission(
   });
 }
 
+export async function getPendingSubmissions(): Promise<TaskSubmission[]> {
+  const submissionsRef = collection(db, 'taskSubmissions');
+  const q = query(submissionsRef, where('status', '==', 'submitted'));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) =>
+    toSubmission(d.id, d.data() as Record<string, unknown>)
+  );
+}
+
 export async function getAchievementRate(
   bookId: string,
   memberId: string
