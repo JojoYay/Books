@@ -487,8 +487,8 @@ export default function BookTasksPage() {
             </button>
           </div>
 
-          {/* Constrained preview image */}
-          <div className="relative bg-gray-50 max-h-[45vh] overflow-hidden">
+          {/* Preview image — full when browsing, constrained when form is open */}
+          <div className={`relative bg-gray-50 ${showForm ? 'max-h-[35vh] overflow-hidden' : ''}`}>
             {currentPageData ? (
               <Image
                 src={currentPageData.imageUrl}
