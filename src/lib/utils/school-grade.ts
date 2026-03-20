@@ -15,8 +15,8 @@ export type SchoolGrade =
   | null;
 
 /**
- * Returns the Japanese school grade label for a person with the given birthday,
- * or null if they are 高校卒業以上 (graduated high school or older).
+ * Returns the Japanese school grade label for a person with the given birthday.
+ * Returns null only if the birthday is invalid.
  */
 export function calcSchoolGrade(birthday: Date | string, today?: Date): SchoolGrade {
   const birth = birthday instanceof Date ? birthday : new Date(birthday);
@@ -53,7 +53,7 @@ export function calcSchoolGrade(birthday: Date | string, today?: Date): SchoolGr
     return { label: `高${gradeInYear - 9}`, level: 'high' };
   }
 
-  return null; // 高校卒業以上
+  return { label: '大人', level: 'graduated' };
 }
 
 export type SchoolLevel = 'pre' | 'elementary' | 'middle' | 'high' | 'graduated';
