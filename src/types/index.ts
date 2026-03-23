@@ -23,6 +23,7 @@ export interface Book {
   totalPages: number;
   assignedMembers: string[]; // userId[]
   createdAt: Date;
+  order?: number;            // 表示順（小さい順に表示、未設定は末尾）
 }
 
 // ページ

@@ -33,6 +33,31 @@ export default function AdminBooksPage() {
   const [assignSelected, setAssignSelected] = useState<Set<string>>(new Set());
   const [assignSubmitting, setAssignSubmitting] = useState(false);
 
+  // インライン表示順編集
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+  const [editingOrderValue, setEditingOrderValue] = useState('');
+  const [savingOrderId, setSavingOrderId] = useState<string | null>(null);
+
+  async function handleSaveOrder(bookId: string) {
+    setSavingOrderId(bookId);
+    try {
+      const val = editingOrderValue.trim();
+      const order = val === '' ? undefined : Number(val);
+      await updateBook(bookId, { order });
+      setBooks((prev) =>
+        prev.map((b) => (b.id === bookId ? { ...b, order } : b))
+      );
+      setEditingOrderId(null);
+      // Re-sort after order change
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+      alert('保存に失敗しました。');
+    } finally {
+      setSavingOrderId(null);
+    }
+  }
+
   useEffect(() => {
     if (!loading) {
       if (!user) router.replace('/login');
@@ -167,6 +192,55 @@ export default function AdminBooksPage() {
                 <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
                   <span>{book.totalPages} ページ</span>
                   <span>隊員 {book.assignedMembers.length} 人</span>
+                </div>
+                {/* 表示順 — inline edit */}
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  <span className="text-[10px] text-gray-400">表示順:</span>
+                  {editingOrderId === book.id ? (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min={0}
+                        value={editingOrderValue}
+                        onChange={(e) => setEditingOrderValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveOrder(book.id);
+                          if (e.key === 'Escape') setEditingOrderId(null);
+                        }}
+                        autoFocus
+                        className="w-14 rounded border border-green-400 px-1.5 py-0.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-green-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSaveOrder(book.id)}
+                        disabled={savingOrderId === book.id}
+                        className="rounded bg-green-600 px-1.5 py-0.5 text-[10px] text-white hover:bg-green-700 disabled:opacity-60"
+                      >
+                        {savingOrderId === book.id ? '...' : '保存'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingOrderId(null)}
+                        className="text-[10px] text-gray-400 hover:text-gray-600"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingOrderId(book.id);
+                        setEditingOrderValue(book.order != null ? String(book.order) : '');
+                      }}
+                      className="flex items-center gap-0.5 text-[10px] text-gray-500 hover:text-green-700 transition-colors"
+                    >
+                      <span>{book.order != null ? book.order : '未設定'}</span>
+                      <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
                 {book.description && (
                   <p className="mt-2 text-xs text-gray-500 line-clamp-2 break-words">

@@ -26,6 +26,7 @@ function toBook(id: string, data: Record<string, unknown>): Book {
       data.createdAt instanceof Timestamp
         ? data.createdAt.toDate()
         : new Date(),
+    order: (data.order as number | undefined) ?? undefined,
   };
 }
 
@@ -35,15 +36,22 @@ export async function getBooks(
 ): Promise<Book[]> {
   const booksRef = collection(db, 'books');
   const q = isLeader
-    ? query(booksRef, orderBy('createdAt', 'desc'))
+    ? query(booksRef)
     : query(
         booksRef,
-        where('assignedMembers', 'array-contains', userId),
-        orderBy('createdAt', 'desc')
+        where('assignedMembers', 'array-contains', userId)
       );
 
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => toBook(d.id, d.data() as Record<string, unknown>));
+  const books = snapshot.docs.map((d) => toBook(d.id, d.data() as Record<string, unknown>));
+  // order 昇順（未設定は末尾）、同順は作成日降順
+  books.sort((a, b) => {
+    const oa = a.order ?? Number.MAX_SAFE_INTEGER;
+    const ob = b.order ?? Number.MAX_SAFE_INTEGER;
+    if (oa !== ob) return oa - ob;
+    return b.createdAt.getTime() - a.createdAt.getTime();
+  });
+  return books;
 }
 
 export async function getBook(bookId: string): Promise<Book | null> {
