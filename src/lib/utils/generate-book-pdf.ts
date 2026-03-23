@@ -142,10 +142,10 @@ export async function generateBookPdf(
       <div style="margin-bottom:20px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
         <div style="background:#f3f4f6;padding:10px 14px;border-bottom:1px solid #e5e7eb;">
           <div style="display:flex;align-items:center;justify-content:space-between;">
-            <strong style="font-size:13px;color:#111827;">${escapeHtml(task.title)}</strong>
+            <strong style="font-size:13px;color:#111827;">${escapeHtml(task.category)}</strong>
             <span style="font-size:11px;font-weight:600;color:${statusColor};">${STATUS_LABEL[status]}</span>
           </div>
-          ${task.description ? `<p style="margin:4px 0 0;font-size:11px;color:#6b7280;white-space:pre-wrap;">${escapeHtml(task.description)}</p>` : ''}
+          <p style="margin:4px 0 0;font-size:11px;color:#6b7280;white-space:pre-wrap;">${escapeHtml(task.question)}</p>
         </div>
         <div style="padding:10px 14px;">
           ${submission?.submittedAt ? `<p style="margin:0 0 4px;font-size:11px;color:#6b7280;">提出日: ${formatDate(submission.submittedAt)}</p>` : ''}

@@ -79,13 +79,9 @@ export default function SubmissionReviewModal({
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           {/* Task info */}
           <div className="rounded-xl bg-gray-50 p-3">
-            <p className="text-sm font-semibold text-gray-800">{task.title}</p>
+            <p className="text-xs font-medium text-green-700">{task.category}</p>
+            <p className="text-sm font-semibold text-gray-800">{task.question}</p>
             <p className="text-xs text-gray-500 mt-0.5">p.{task.pageNumber}</p>
-            {task.description && (
-              <p className="mt-1.5 text-xs text-gray-600 whitespace-pre-wrap break-words">
-                <LinkifiedText text={task.description} />
-              </p>
-            )}
           </div>
 
           {/* Submission info */}

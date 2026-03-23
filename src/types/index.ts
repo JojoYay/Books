@@ -36,8 +36,8 @@ export interface Task {
   id: string;
   bookId: string;
   pageNumber: number;
-  title: string;
-  description: string;
+  category: string;    // 大項目（例: 運動、自然観察）
+  question: string;    // 設問内容
   order: number;
 }
 

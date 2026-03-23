@@ -284,7 +284,7 @@ export default function DashboardPage() {
                       <span className="text-gray-600 truncate">{item.book.title}</span>
                     </div>
                     <p className="mt-0.5 text-xs text-gray-500 truncate">
-                      {item.task.title}
+                      {item.task.category} — {item.task.question}
                       {item.submission.photos.length > 0 && ` — 写真${item.submission.photos.length}枚`}
                       {item.submission.comment && ' — コメントあり'}
                     </p>

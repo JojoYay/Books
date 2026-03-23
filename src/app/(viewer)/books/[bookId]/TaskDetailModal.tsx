@@ -106,7 +106,7 @@ export default function TaskDetailModal({
             memberId: currentUserId,
             memberName,
             bookTitle,
-            taskTitle: task.title,
+            taskTitle: `${task.category} - ${task.question}`,
             submittedAt: submittedAt.toISOString(),
           }),
         }).catch((err) =>
@@ -172,9 +172,12 @@ export default function TaskDetailModal({
       <div className="fixed inset-x-4 bottom-4 top-16 z-70 flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:inset-x-auto sm:left-1/2 sm:top-12 sm:w-full sm:max-w-lg sm:-translate-x-1/2">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-          <h2 className="text-base font-semibold text-gray-900 truncate pr-4">
-            {task.title}
-          </h2>
+          <div className="truncate pr-4">
+            <p className="text-xs font-medium text-green-700">{task.category}</p>
+            <h2 className="text-base font-semibold text-gray-900 truncate">
+              {task.question}
+            </h2>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -199,12 +202,10 @@ export default function TaskDetailModal({
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
-          {/* Description */}
-          {task.description && (
-            <div className="rounded-xl bg-gray-50 p-3 text-sm text-gray-700 whitespace-pre-wrap break-words">
-              <LinkifiedText text={task.description} />
-            </div>
-          )}
+          {/* Question detail */}
+          <div className="rounded-xl bg-gray-50 p-3 text-sm text-gray-700 whitespace-pre-wrap break-words">
+            <LinkifiedText text={task.question} />
+          </div>
 
           {/* Completion info */}
           {status === 'completed' && (

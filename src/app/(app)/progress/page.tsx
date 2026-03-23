@@ -235,8 +235,11 @@ export default function ProgressPage() {
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-start justify-between gap-2">
                                     <div>
-                                      <p className="text-sm font-medium text-gray-900 group-hover:text-green-700 transition-colors">
-                                        {task.title}
+                                      <p className="text-xs font-medium text-green-700">
+                                        {task.category}
+                                      </p>
+                                      <p className="text-sm text-gray-900 group-hover:text-green-700 transition-colors">
+                                        {task.question}
                                       </p>
                                       <p className="text-xs text-gray-400 mt-0.5">
                                         p.{task.pageNumber}

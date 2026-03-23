@@ -129,14 +129,12 @@ export default function TaskPanel({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">
-                        {task.title}
+                      <p className="text-xs font-medium text-green-700">
+                        {task.category}
                       </p>
-                      {task.description && (
-                        <p className="mt-0.5 text-sm text-gray-500 line-clamp-2 break-words">
-                          <LinkifiedText text={task.description} />
-                        </p>
-                      )}
+                      <p className="mt-0.5 text-sm text-gray-900 line-clamp-2 break-words">
+                        <LinkifiedText text={task.question} />
+                      </p>
                     </div>
                     <StatusBadge label={label} />
                   </div>

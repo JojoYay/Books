@@ -18,8 +18,9 @@ function toTask(id: string, data: Record<string, unknown>): Task {
     id,
     bookId: (data.bookId as string) ?? '',
     pageNumber: (data.pageNumber as number) ?? 0,
-    title: (data.title as string) ?? '',
-    description: (data.description as string) ?? '',
+    // 後方互換: 旧フィールド title/description からのフォールバック
+    category: (data.category as string) ?? (data.title as string) ?? '',
+    question: (data.question as string) ?? (data.description as string) ?? '',
     order: (data.order as number) ?? 0,
   };
 }

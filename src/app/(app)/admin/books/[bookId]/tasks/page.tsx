@@ -17,15 +17,15 @@ import Image from 'next/image';
 
 interface TaskFormData {
   pageNumber: number;
-  title: string;
-  description: string;
+  category: string;
+  question: string;
   order: number;
 }
 
 const emptyTaskForm: TaskFormData = {
   pageNumber: 1,
-  title: '',
-  description: '',
+  category: '',
+  question: '',
   order: 0,
 };
 
@@ -115,8 +115,8 @@ export default function BookTasksPage() {
     setEditingTask(task);
     setForm({
       pageNumber: task.pageNumber,
-      title: task.title,
-      description: task.description,
+      category: task.category,
+      question: task.question,
       order: task.order,
     });
     setPreviewPage(task.pageNumber);
@@ -129,8 +129,12 @@ export default function BookTasksPage() {
     e.preventDefault();
     setFormError(null);
 
-    if (!form.title.trim()) {
-      setFormError('タイトルを入力してください。');
+    if (!form.category.trim()) {
+      setFormError('大項目を入力してください。');
+      return;
+    }
+    if (!form.question.trim()) {
+      setFormError('設問を入力してください。');
       return;
     }
 
@@ -263,26 +267,29 @@ export default function BookTasksPage() {
 
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1">
-            タイトル <span className="text-red-500">*</span>
+            大項目 <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             required
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            value={form.category}
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-            placeholder="課題のタイトルを入力"
+            placeholder="例: 運動、自然観察"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">説明</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            設問 <span className="text-red-500">*</span>
+          </label>
           <textarea
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            rows={2}
+            value={form.question}
+            required
+            onChange={(e) => setForm({ ...form, question: e.target.value })}
+            rows={3}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 resize-none"
-            placeholder="課題の説明を入力（任意）"
+            placeholder="設問の内容を入力"
           />
         </div>
 
@@ -354,12 +361,10 @@ export default function BookTasksPage() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{task.title}</p>
-                  {task.description && (
-                    <p className="mt-0.5 text-xs text-gray-500 line-clamp-2">
-                      <LinkifiedText text={task.description} />
-                    </p>
-                  )}
+                  <p className="text-xs font-medium text-green-700">{task.category}</p>
+                  <p className="mt-0.5 text-sm text-gray-900 line-clamp-2">
+                    <LinkifiedText text={task.question} />
+                  </p>
                 </div>
 
                 <div className="flex flex-shrink-0 items-center gap-1.5">
@@ -518,7 +523,7 @@ export default function BookTasksPage() {
             <ul className="space-y-1">
               {tasksOnCurrentPage.map((t) => (
                 <li key={t.id} className="flex items-center justify-between rounded-lg bg-white px-3 py-1.5 text-sm">
-                  <span className="text-gray-800">{t.title}</span>
+                  <span className="text-gray-800"><span className="text-xs text-green-600">{t.category}</span> {t.question}</span>
                   <button
                     type="button"
                     onClick={() => openEditForm(t)}
@@ -573,7 +578,7 @@ export default function BookTasksPage() {
               <ul className="space-y-1">
                 {tasksOnCurrentPage.map((t) => (
                   <li key={t.id} className="flex items-center justify-between rounded-lg bg-white px-3 py-1.5 text-sm">
-                    <span className="text-gray-800">{t.title}</span>
+                    <span className="text-gray-800"><span className="text-xs text-green-600">{t.category}</span> {t.question}</span>
                     <button type="button" onClick={() => openEditForm(t)} className="text-xs text-green-600 hover:text-green-800">
                       編集
                     </button>
