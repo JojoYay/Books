@@ -52,6 +52,11 @@ export default function AdminMembersPage() {
   const [editingGroupValue, setEditingGroupValue] = useState('');
   const [savingGroupId, setSavingGroupId] = useState<string | null>(null);
 
+  // インライン「誕生日」編集
+  const [editingBirthdayId, setEditingBirthdayId] = useState<string | null>(null);
+  const [editingBirthdayValue, setEditingBirthdayValue] = useState('');
+  const [savingBirthdayId, setSavingBirthdayId] = useState<string | null>(null);
+
   useEffect(() => {
     if (!loading) {
       if (!user) {
@@ -156,6 +161,24 @@ export default function AdminMembersPage() {
     }
   }
 
+  async function handleSaveBirthday(userId: string) {
+    setSavingBirthdayId(userId);
+    try {
+      await updateUser(userId, { birthday: editingBirthdayValue || undefined });
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === userId ? { ...u, birthday: editingBirthdayValue || undefined } : u
+        )
+      );
+      setEditingBirthdayId(null);
+    } catch (err) {
+      console.error(err);
+      alert('保存に失敗しました。');
+    } finally {
+      setSavingBirthdayId(null);
+    }
+  }
+
   if (loading || fetching) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -206,6 +229,7 @@ export default function AdminMembersPage() {
             {users.map((u) => {
               const grade = u.birthday ? calcSchoolGrade(u.birthday) : null;
               const isEditingGroup = editingGroupId === u.id;
+              const isEditingBirthday = editingBirthdayId === u.id;
 
               return (
                 <li key={u.id} className="px-5 py-4">
@@ -286,6 +310,60 @@ export default function AdminMembersPage() {
                           >
                             <span className={u.group ? 'font-medium' : 'text-gray-400'}>
                               {u.group ?? '未設定'}
+                            </span>
+                            <svg
+                              className="h-3 w-3 text-gray-300 group-hover:text-green-600 transition-colors"
+                              fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* 誕生日 — inline edit */}
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="text-xs text-gray-400 shrink-0">誕生日:</span>
+                        {isEditingBirthday ? (
+                          <div className="flex items-center gap-1.5 flex-1 flex-wrap">
+                            <input
+                              type="date"
+                              value={editingBirthdayValue}
+                              onChange={(e) => setEditingBirthdayValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveBirthday(u.id);
+                                if (e.key === 'Escape') setEditingBirthdayId(null);
+                              }}
+                              autoFocus
+                              className="w-40 rounded-lg border border-green-400 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleSaveBirthday(u.id)}
+                              disabled={savingBirthdayId === u.id}
+                              className="rounded-lg bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-60 transition-colors"
+                            >
+                              {savingBirthdayId === u.id ? '保存中' : '保存'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingBirthdayId(null)}
+                              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                              キャンセル
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingBirthdayId(u.id);
+                              setEditingBirthdayValue(u.birthday ?? '');
+                            }}
+                            className="flex items-center gap-1 text-xs text-gray-600 hover:text-green-700 transition-colors group"
+                          >
+                            <span className={u.birthday ? 'font-medium' : 'text-gray-400'}>
+                              {u.birthday ?? '未設定'}
                             </span>
                             <svg
                               className="h-3 w-3 text-gray-300 group-hover:text-green-600 transition-colors"
