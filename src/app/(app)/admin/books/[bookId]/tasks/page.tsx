@@ -362,7 +362,7 @@ export default function BookTasksPage() {
 
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-green-700">{task.category}</p>
-                  <p className="mt-0.5 text-sm text-gray-900 line-clamp-2">
+                  <p className="mt-0.5 text-sm text-gray-900">
                     <LinkifiedText text={task.question} />
                   </p>
                 </div>
