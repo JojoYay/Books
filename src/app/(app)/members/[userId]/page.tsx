@@ -83,6 +83,9 @@ export default function MemberProfilePage() {
           </div>
 
           <div className="text-center">
+            {profile.nameKana && (
+              <p className="text-xs text-gray-400 mb-0.5">{profile.nameKana}</p>
+            )}
             <h1 className="text-xl font-bold text-gray-900">{profile.name}</h1>
             <div className="mt-1.5 flex items-center justify-center gap-1.5 flex-wrap">
               <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${ROLE_BADGE[profile.role]}`}>

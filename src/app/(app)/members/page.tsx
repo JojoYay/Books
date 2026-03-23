@@ -41,6 +41,7 @@ export default function MembersPage() {
   const filtered = users.filter(
     (u) =>
       u.name.includes(search) ||
+      (u.nameKana ?? '').includes(search) ||
       (u.group ?? '').includes(search) ||
       (u.tagline ?? '').includes(search)
   );
@@ -146,6 +147,9 @@ export default function MembersPage() {
 
         {/* Info */}
         <div className="min-w-0 flex-1">
+          {u.nameKana && (
+            <p className="text-[10px] text-gray-400 leading-none mb-0.5">{u.nameKana}</p>
+          )}
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-semibold text-gray-900 truncate">{u.name}</span>
             <span className={`rounded-full px-2 py-0.5 text-xs font-medium shrink-0 ${ROLE_BADGE[u.role]}`}>

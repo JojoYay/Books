@@ -22,6 +22,7 @@ export default function ProfilePage() {
 
   // Profile fields
   const [name, setName] = useState('');
+  const [nameKana, setNameKana] = useState('');
   const [birthday, setBirthday] = useState('');
   const [tagline, setTagline] = useState('');
   const [bio, setBio] = useState('');
@@ -45,6 +46,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (userProfile) {
       setName(userProfile.name ?? '');
+      setNameKana(userProfile.nameKana ?? '');
       setBirthday(userProfile.birthday ?? '');
       setTagline(userProfile.tagline ?? '');
       setBio(userProfile.bio ?? '');
@@ -79,6 +81,7 @@ export default function ProfilePage() {
 
       await updateUser(user.uid, {
         name: name.trim() || (userProfile?.name ?? ''),
+        nameKana: nameKana.trim() || undefined,
         photoUrl: photoUrl ?? '',
         tagline: tagline.trim(),
         bio: bio.trim(),
@@ -233,6 +236,24 @@ export default function ProfilePage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="名前を入力"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+            />
+          </div>
+
+          {/* ふりがな */}
+          <div>
+            <label
+              htmlFor="profile-name-kana"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              ふりがな
+            </label>
+            <input
+              id="profile-name-kana"
+              type="text"
+              value={nameKana}
+              onChange={(e) => setNameKana(e.target.value)}
+              placeholder="やまだ たろう"
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
             />
           </div>

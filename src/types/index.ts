@@ -4,6 +4,7 @@ export type UserRole = "leader" | "member";
 export interface UserProfile {
   id: string;
   name: string;
+  nameKana?: string;   // ふりがな
   email: string;
   role: UserRole;
   createdAt: Date;

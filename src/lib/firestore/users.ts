@@ -19,6 +19,7 @@ function toUserProfile(
   return {
     id,
     name: (data.name as string) ?? '',
+    nameKana: (data.nameKana as string) || undefined,
     email: (data.email as string) ?? '',
     role: (data.role as UserRole) ?? 'member',
     createdAt:

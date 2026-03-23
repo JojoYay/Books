@@ -6,8 +6,9 @@ import { UserRole } from '@/types';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, password, role, birthday } = body as {
+    const { name, nameKana, email, password, role, birthday } = body as {
       name?: string;
+      nameKana?: string;
       email?: string;
       password?: string;
       role?: string;
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
       email,
       role: role as UserRole,
       createdAt: Timestamp.now(),
+      ...(nameKana ? { nameKana } : {}),
       ...(birthday ? { birthday } : {}),
     });
 

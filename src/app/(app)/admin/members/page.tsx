@@ -10,6 +10,7 @@ import { calcSchoolGrade, gradeBadgeClass } from '@/lib/utils/school-grade';
 
 interface CreateUserForm {
   name: string;
+  nameKana: string;
   email: string;
   password: string;
   role: UserRole;
@@ -37,6 +38,7 @@ export default function AdminMembersPage() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState<CreateUserForm>({
     name: '',
+    nameKana: '',
     email: '',
     password: '',
     role: 'member',
@@ -46,6 +48,11 @@ export default function AdminMembersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [disablingId, setDisablingId] = useState<string | null>(null);
+
+  // インライン「ふりがな」編集
+  const [editingKanaId, setEditingKanaId] = useState<string | null>(null);
+  const [editingKanaValue, setEditingKanaValue] = useState('');
+  const [savingKanaId, setSavingKanaId] = useState<string | null>(null);
 
   // インライン「組」編集
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
@@ -115,7 +122,7 @@ export default function AdminMembersPage() {
       }
 
       setShowModal(false);
-      setForm({ name: '', email: '', password: '', role: 'member', birthday: '', group: '' });
+      setForm({ name: '', nameKana: '', email: '', password: '', role: 'member', birthday: '', group: '' });
       await fetchUsers();
     } catch (err) {
       console.error(err);
@@ -142,6 +149,24 @@ export default function AdminMembersPage() {
       setDisablingId(null);
     }
   };
+
+  async function handleSaveKana(userId: string) {
+    setSavingKanaId(userId);
+    try {
+      await updateUser(userId, { nameKana: editingKanaValue.trim() || undefined });
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === userId ? { ...u, nameKana: editingKanaValue.trim() || undefined } : u
+        )
+      );
+      setEditingKanaId(null);
+    } catch (err) {
+      console.error(err);
+      alert('保存に失敗しました。');
+    } finally {
+      setSavingKanaId(null);
+    }
+  }
 
   async function handleSaveGroup(userId: string) {
     setSavingGroupId(userId);
@@ -228,6 +253,7 @@ export default function AdminMembersPage() {
           <ul className="divide-y divide-gray-100">
             {users.map((u) => {
               const grade = u.birthday ? calcSchoolGrade(u.birthday) : null;
+              const isEditingKana = editingKanaId === u.id;
               const isEditingGroup = editingGroupId === u.id;
               const isEditingBirthday = editingBirthdayId === u.id;
 
@@ -265,6 +291,61 @@ export default function AdminMembersPage() {
                         )}
                       </div>
                       <p className="mt-0.5 text-sm text-gray-500 truncate">{u.email}</p>
+
+                      {/* ふりがな — inline edit */}
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="text-xs text-gray-400 shrink-0">ふりがな:</span>
+                        {isEditingKana ? (
+                          <div className="flex items-center gap-1.5 flex-1 flex-wrap">
+                            <input
+                              type="text"
+                              value={editingKanaValue}
+                              onChange={(e) => setEditingKanaValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveKana(u.id);
+                                if (e.key === 'Escape') setEditingKanaId(null);
+                              }}
+                              autoFocus
+                              placeholder="やまだ たろう"
+                              className="w-36 rounded-lg border border-green-400 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleSaveKana(u.id)}
+                              disabled={savingKanaId === u.id}
+                              className="rounded-lg bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-60 transition-colors"
+                            >
+                              {savingKanaId === u.id ? '保存中' : '保存'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingKanaId(null)}
+                              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                              キャンセル
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingKanaId(u.id);
+                              setEditingKanaValue(u.nameKana ?? '');
+                            }}
+                            className="flex items-center gap-1 text-xs text-gray-600 hover:text-green-700 transition-colors group"
+                          >
+                            <span className={u.nameKana ? 'font-medium' : 'text-gray-400'}>
+                              {u.nameKana ?? '未設定'}
+                            </span>
+                            <svg
+                              className="h-3 w-3 text-gray-300 group-hover:text-green-600 transition-colors"
+                              fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
 
                       {/* 組 — inline edit */}
                       <div className="mt-2 flex items-center gap-2">
@@ -413,6 +494,17 @@ export default function AdminMembersPage() {
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                   placeholder="山田 太郎"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">ふりがな</label>
+                <input
+                  type="text"
+                  value={form.nameKana}
+                  onChange={(e) => setForm({ ...form, nameKana: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                  placeholder="やまだ たろう"
                 />
               </div>
 
