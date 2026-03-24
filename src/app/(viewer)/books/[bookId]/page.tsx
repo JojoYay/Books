@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -59,6 +59,10 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
 
   // Share
   const [shareToast, setShareToast] = useState(false);
+
+  // Zoom scale persistence across pages
+  const [savedScale, setSavedScale] = useState(1);
+  const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
 
   // Touch gesture tracking
   const touchStartX = useRef<number | null>(null);
@@ -143,6 +147,12 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
     setCurrentPage(clamped);
     setSliderValue(clamped);
     setShowTaskPanel(false);
+    // Reset position but keep scale
+    setTimeout(() => {
+      if (transformRef.current) {
+        transformRef.current.setTransform(0, 0, savedScale, 0);
+      }
+    }, 50);
   }
 
   // Touch gesture handlers
@@ -328,13 +338,16 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
 
         {!offline && pageData?.imageUrl && !imageError && (
           <TransformWrapper
-            key={currentPage}
-            initialScale={1}
+            initialScale={savedScale}
             minScale={0.5}
             maxScale={5}
             centerOnInit
             wheel={{ step: 0.1 }}
             panning={{ excluded: [] }}
+            onTransformed={(_ref, state) => {
+              setSavedScale(state.scale);
+            }}
+            ref={transformRef}
           >
             <TransformComponent
               wrapperStyle={{ width: '100%', height: '100%' }}
