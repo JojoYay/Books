@@ -8,16 +8,14 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { getBook } from '@/lib/firestore/books';
-import { getTasksByPage } from '@/lib/firestore/tasks';
-import { getSubmission } from '@/lib/firestore/submissions';
 import {
   isBookmarked,
   addBookmark,
   removeBookmark,
   getBookmarkId,
 } from '@/lib/firestore/bookmarks';
-import { Book, BookPage, Task, TaskSubmission } from '@/types';
-import TaskPanel from './TaskPanel';
+import { Book, BookPage } from '@/types';
+import BookTasksPanel from './BookTasksPanel';
 
 interface BookViewerPageProps {
   params: Promise<{ bookId: string }>;
@@ -45,10 +43,8 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
   );
   const [showSlider, setShowSlider] = useState(false);
 
-  // Tasks
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [submissions, setSubmissions] = useState<TaskSubmission[]>([]);
-  const [showTaskPanel, setShowTaskPanel] = useState(false);
+  // Tasks panel (mobile drawer)
+  const [showBookTasksPanel, setShowBookTasksPanel] = useState(false);
 
   // Bookmark
   const [bookmarked, setBookmarked] = useState(false);
@@ -105,16 +101,6 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
           setPageData({ pageNumber: pageNum, imageUrl: '' });
         }
 
-        // Tasks for this page
-        const pageTasks = await getTasksByPage(bookId, pageNum);
-        setTasks(pageTasks);
-
-        // Submissions for these tasks
-        const subs = await Promise.all(
-          pageTasks.map((t) => getSubmission(t.id, user.uid))
-        );
-        setSubmissions(subs.filter(Boolean) as TaskSubmission[]);
-
         // Bookmark status
         const bm = await isBookmarked(user.uid, bookId, pageNum);
         setBookmarked(bm);
@@ -146,7 +132,7 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
     const clamped = Math.max(1, Math.min(book.totalPages, page));
     setCurrentPage(clamped);
     setSliderValue(clamped);
-    setShowTaskPanel(false);
+    setShowBookTasksPanel(false);
     // Reset position but keep scale
     setTimeout(() => {
       if (transformRef.current) {
@@ -300,6 +286,8 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
         </div>
       )}
 
+      {/* Main row: image area + persistent tasks panel (desktop) */}
+      <div className="flex flex-1 min-h-0">
       {/* Page image area */}
       <div
         className="relative flex flex-1 min-h-0 items-center justify-center"
@@ -384,29 +372,20 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
           </div>
         )}
 
-        {/* Task indicator on page */}
-        {tasks.length > 0 && !showTaskPanel && (
-          <button
-            type="button"
-            onClick={() => setShowTaskPanel(true)}
-            className="absolute top-4 right-4 flex items-center gap-1.5 rounded-full bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white shadow-lg hover:bg-orange-600 transition-colors z-20"
-          >
-            <svg
-              className="h-3.5 w-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z"
-              />
-            </svg>
-            課題 {tasks.length}
-          </button>
-        )}
+      </div>
+      {/* Persistent tasks panel (desktop) */}
+      {user && (
+        <BookTasksPanel
+          bookId={bookId}
+          bookTitle={book.title}
+          currentPage={currentPage}
+          currentUserId={user.uid}
+          memberName={userProfile?.name}
+          isLeader={isLeader}
+          onJumpToPage={(p) => goToPage(p)}
+          className="hidden sm:flex sm:w-[340px] sm:shrink-0 sm:border-l sm:border-gray-200"
+        />
+      )}
       </div>
 
       {/* Page slider bar */}
@@ -547,30 +526,29 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
             <span>共有</span>
           </button>
 
-          {/* Task button */}
-          {tasks.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowTaskPanel((prev) => !prev)}
-              className="flex flex-col items-center gap-0.5 rounded-xl bg-orange-500 px-3 py-2 text-xs font-medium text-white hover:bg-orange-600 transition-colors"
-              aria-label="課題"
+          {/* Book-wide tasks list (mobile only) */}
+          <button
+            type="button"
+            onClick={() => setShowBookTasksPanel(true)}
+            className="flex sm:hidden flex-col items-center gap-0.5 rounded-xl bg-gray-700 px-3 py-2 text-xs font-medium text-gray-300 hover:bg-gray-600 transition-colors"
+            aria-label="課題一覧"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
             >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z"
-                />
-              </svg>
-              <span>課題</span>
-            </button>
-          )}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5"
+              />
+            </svg>
+            <span>課題一覧</span>
+          </button>
+
         </div>
 
         {/* Next button */}
@@ -684,19 +662,32 @@ export default function BookViewerPage({ params }: BookViewerPageProps) {
         </>
       )}
 
-      {/* Task panel */}
-      {showTaskPanel && user && (
-        <TaskPanel
-          tasks={tasks}
-          submissions={submissions}
-          currentUserId={user.uid}
-          bookId={bookId}
-          memberName={userProfile?.name}
-          bookTitle={book.title}
-          isLeader={isLeader}
-          onClose={() => setShowTaskPanel(false)}
-          onSubmissionChange={() => loadPageData(currentPage)}
-        />
+      {/* Mobile tasks drawer */}
+      {showBookTasksPanel && user && (
+        <>
+          <div
+            className="sm:hidden fixed inset-0 z-40 bg-black/40"
+            onClick={() => setShowBookTasksPanel(false)}
+            aria-hidden="true"
+          />
+          <div className="sm:hidden fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-hidden rounded-t-2xl shadow-xl">
+            <BookTasksPanel
+              bookId={bookId}
+              bookTitle={book.title}
+              currentPage={currentPage}
+              currentUserId={user.uid}
+              memberName={userProfile?.name}
+              isLeader={isLeader}
+              showCloseButton
+              onClose={() => setShowBookTasksPanel(false)}
+              onJumpToPage={(pageNum) => {
+                setShowBookTasksPanel(false);
+                goToPage(pageNum);
+              }}
+              className="max-h-[85vh]"
+            />
+          </div>
+        </>
       )}
     </div>
   );
