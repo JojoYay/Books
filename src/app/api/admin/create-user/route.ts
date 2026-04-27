@@ -1,19 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { Timestamp } from 'firebase-admin/firestore';
-import { UserRole } from '@/types';
+import { UserRole, GroupRole } from '@/types';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, nameKana, email, password, role, birthday } = body as {
-      name?: string;
-      nameKana?: string;
-      email?: string;
-      password?: string;
-      role?: string;
-      birthday?: string;
-    };
+    const { name, nameKana, email, password, role, birthday, group, groupRole } =
+      body as {
+        name?: string;
+        nameKana?: string;
+        email?: string;
+        password?: string;
+        role?: string;
+        birthday?: string;
+        group?: string;
+        groupRole?: string;
+      };
 
     // Validation
     if (!name || !email || !password || !role) {
@@ -44,6 +47,11 @@ export async function POST(req: NextRequest) {
       displayName: name,
     });
 
+    const validGroupRole =
+      groupRole === 'kumicho' || groupRole === 'jicho'
+        ? (groupRole as GroupRole)
+        : undefined;
+
     // Create Firestore user document
     await adminDb.collection('users').doc(userRecord.uid).set({
       name,
@@ -52,6 +60,8 @@ export async function POST(req: NextRequest) {
       createdAt: Timestamp.now(),
       ...(nameKana ? { nameKana } : {}),
       ...(birthday ? { birthday } : {}),
+      ...(group ? { group } : {}),
+      ...(validGroupRole ? { groupRole: validGroupRole } : {}),
     });
 
     return NextResponse.json({ success: true, userId: userRecord.uid });

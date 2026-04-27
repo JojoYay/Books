@@ -10,7 +10,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
-import { UserProfile, UserRole } from '@/types';
+import { UserProfile, UserRole, GroupRole } from '@/types';
 
 function toUserProfile(
   id: string,
@@ -31,6 +31,9 @@ function toUserProfile(
     bio: (data.bio as string) || undefined,
     birthday: (data.birthday as string) || undefined,
     group: (data.group as string) || undefined,
+    groupRole: ((data.groupRole as GroupRole) || undefined) as
+      | GroupRole
+      | undefined,
   };
 }
 

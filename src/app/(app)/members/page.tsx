@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAllUsers } from '@/lib/firestore/users';
-import { UserProfile } from '@/types';
+import { UserProfile, GroupRole } from '@/types';
 import { calcSchoolGrade, gradeBadgeClass } from '@/lib/utils/school-grade';
 
 const ROLE_LABEL: Record<string, string> = {
@@ -18,6 +18,24 @@ const ROLE_BADGE: Record<string, string> = {
   member: 'bg-blue-100 text-blue-700',
 };
 
+const GROUP_ROLE_LABEL: Record<GroupRole, string> = {
+  kumicho: '組長',
+  jicho: '次長',
+};
+
+const GROUP_ROLE_BADGE: Record<GroupRole, string> = {
+  kumicho: 'bg-amber-100 text-amber-700',
+  jicho: 'bg-orange-100 text-orange-700',
+};
+
+function groupRoleRank(role?: GroupRole): number {
+  if (role === 'kumicho') return 0;
+  if (role === 'jicho') return 1;
+  return 2;
+}
+
+const UNGROUPED_KEY = '__ungrouped__';
+
 export default function MembersPage() {
   const { user } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -27,14 +45,7 @@ export default function MembersPage() {
   useEffect(() => {
     if (!user) return;
     getAllUsers()
-      .then((all) => {
-        // Sort: leaders first, then members; within each group sort by name
-        all.sort((a, b) => {
-          if (a.role !== b.role) return a.role === 'leader' ? -1 : 1;
-          return a.name.localeCompare(b.name, 'ja');
-        });
-        setUsers(all);
-      })
+      .then((all) => setUsers(all))
       .finally(() => setLoading(false));
   }, [user]);
 
@@ -46,8 +57,29 @@ export default function MembersPage() {
       (u.tagline ?? '').includes(search)
   );
 
-  const leaders = filtered.filter((u) => u.role === 'leader');
-  const members = filtered.filter((u) => u.role === 'member');
+  // 組ごとにグループ化（組長/次長 → 通常 → 名前順）
+  const groupEntries = (() => {
+    const map = new Map<string, UserProfile[]>();
+    for (const u of filtered) {
+      const key = u.group && u.group.trim() ? u.group : UNGROUPED_KEY;
+      const arr = map.get(key) ?? [];
+      arr.push(u);
+      map.set(key, arr);
+    }
+    for (const arr of map.values()) {
+      arr.sort((a, b) => {
+        const rankDiff = groupRoleRank(a.groupRole) - groupRoleRank(b.groupRole);
+        if (rankDiff !== 0) return rankDiff;
+        if (a.role !== b.role) return a.role === 'leader' ? -1 : 1;
+        return a.name.localeCompare(b.name, 'ja');
+      });
+    }
+    return Array.from(map.entries()).sort((a, b) => {
+      if (a[0] === UNGROUPED_KEY) return 1;
+      if (b[0] === UNGROUPED_KEY) return -1;
+      return a[0].localeCompare(b[0], 'ja');
+    });
+  })();
 
   if (loading) {
     return (
@@ -85,33 +117,22 @@ export default function MembersPage() {
         />
       </div>
 
-      {/* Leaders */}
-      {leaders.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
-            リーダー
+      {/* 組ごと */}
+      {groupEntries.map(([groupKey, groupUsers]) => (
+        <section key={groupKey}>
+          <h2 className="mb-3 flex items-baseline gap-2 text-sm font-semibold tracking-wide text-gray-700">
+            <span>{groupKey === UNGROUPED_KEY ? '組未設定' : groupKey}</span>
+            <span className="text-xs font-normal text-gray-400">
+              {groupUsers.length}人
+            </span>
           </h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {leaders.map((u) => (
+            {groupUsers.map((u) => (
               <MemberCard key={u.id} user={u} />
             ))}
           </div>
         </section>
-      )}
-
-      {/* Members */}
-      {members.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
-            隊員
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {members.map((u) => (
-              <MemberCard key={u.id} user={u} />
-            ))}
-          </div>
-        </section>
-      )}
+      ))}
 
       {filtered.length === 0 && (
         <div className="rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center text-gray-400">
@@ -155,17 +176,21 @@ export default function MembersPage() {
             <span className={`rounded-full px-2 py-0.5 text-xs font-medium shrink-0 ${ROLE_BADGE[u.role]}`}>
               {ROLE_LABEL[u.role]}
             </span>
+            {u.groupRole && (
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-medium shrink-0 ${GROUP_ROLE_BADGE[u.groupRole]}`}
+              >
+                {GROUP_ROLE_LABEL[u.groupRole]}
+              </span>
+            )}
             {grade && (
               <span className={`rounded-full px-2 py-0.5 text-xs font-medium shrink-0 ${gradeBadgeClass(grade.level)}`}>
                 {grade.label}
               </span>
             )}
           </div>
-          {u.group && (
-            <p className="mt-0.5 text-xs text-gray-500">{u.group}</p>
-          )}
           {u.tagline && (
-            <p className="mt-0.5 text-xs text-gray-400 truncate">"{u.tagline}"</p>
+            <p className="mt-0.5 text-xs text-gray-400 truncate">&ldquo;{u.tagline}&rdquo;</p>
           )}
         </div>
 

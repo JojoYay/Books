@@ -1,6 +1,9 @@
 // ユーザー
 export type UserRole = "leader" | "member";
 
+// 組内の役職: 組長 / 次長
+export type GroupRole = "kumicho" | "jicho";
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -13,6 +16,7 @@ export interface UserProfile {
   bio?: string;         // 自己紹介（長文）
   birthday?: string;    // 誕生日 (YYYY-MM-DD)
   group?: string;       // 組（例: ビーバー組、カブ組など）
+  groupRole?: GroupRole; // 組内の役職（組長/次長）
 }
 
 // 本

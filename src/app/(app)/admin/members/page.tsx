@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
+import { deleteField } from 'firebase/firestore';
 import { getAllUsers, updateUser } from '@/lib/firestore/users';
-import { UserProfile, UserRole } from '@/types';
+import { UserProfile, UserRole, GroupRole } from '@/types';
 import { calcSchoolGrade, gradeBadgeClass } from '@/lib/utils/school-grade';
 
 interface CreateUserForm {
@@ -16,6 +17,7 @@ interface CreateUserForm {
   role: UserRole;
   birthday: string;
   group: string;
+  groupRole: '' | GroupRole;
 }
 
 const roleLabel: Record<UserRole, string> = {
@@ -27,6 +29,24 @@ const roleBadgeColor: Record<UserRole, string> = {
   leader: 'bg-green-100 text-green-700',
   member: 'bg-blue-100 text-blue-700',
 };
+
+const groupRoleLabel: Record<GroupRole, string> = {
+  kumicho: '組長',
+  jicho: '次長',
+};
+
+const groupRoleBadgeColor: Record<GroupRole, string> = {
+  kumicho: 'bg-amber-100 text-amber-700',
+  jicho: 'bg-orange-100 text-orange-700',
+};
+
+function groupRoleRank(role?: GroupRole): number {
+  if (role === 'kumicho') return 0;
+  if (role === 'jicho') return 1;
+  return 2;
+}
+
+const UNGROUPED_KEY = '__ungrouped__';
 
 export default function AdminMembersPage() {
   const { user, isLeader, loading } = useAuth();
@@ -44,6 +64,7 @@ export default function AdminMembersPage() {
     role: 'member',
     birthday: '',
     group: '',
+    groupRole: '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -64,6 +85,9 @@ export default function AdminMembersPage() {
   const [editingBirthdayValue, setEditingBirthdayValue] = useState('');
   const [savingBirthdayId, setSavingBirthdayId] = useState<string | null>(null);
 
+  // 組内役職の保存処理中ID
+  const [savingGroupRoleId, setSavingGroupRoleId] = useState<string | null>(null);
+
   useEffect(() => {
     if (!loading) {
       if (!user) {
@@ -79,6 +103,16 @@ export default function AdminMembersPage() {
       setFetching(true);
       const all = await getAllUsers();
       all.sort((a, b) => {
+        // 組ごとに並べ、組内では 組長 → 次長 → その他、最後に未設定
+        const ag = a.group ?? '';
+        const bg = b.group ?? '';
+        if (ag !== bg) {
+          if (!ag) return 1;
+          if (!bg) return -1;
+          return ag.localeCompare(bg, 'ja');
+        }
+        const rankDiff = groupRoleRank(a.groupRole) - groupRoleRank(b.groupRole);
+        if (rankDiff !== 0) return rankDiff;
         if (a.role !== b.role) return a.role === 'leader' ? -1 : 1;
         return a.name.localeCompare(b.name, 'ja');
       });
@@ -122,7 +156,16 @@ export default function AdminMembersPage() {
       }
 
       setShowModal(false);
-      setForm({ name: '', nameKana: '', email: '', password: '', role: 'member', birthday: '', group: '' });
+      setForm({
+        name: '',
+        nameKana: '',
+        email: '',
+        password: '',
+        role: 'member',
+        birthday: '',
+        group: '',
+        groupRole: '',
+      });
       await fetchUsers();
     } catch (err) {
       console.error(err);
@@ -186,6 +229,48 @@ export default function AdminMembersPage() {
     }
   }
 
+  async function handleSaveGroupRole(
+    userId: string,
+    next: GroupRole | null
+  ) {
+    setSavingGroupRoleId(userId);
+    try {
+      if (next === null) {
+        // フィールド削除
+        await updateUser(userId, {
+          groupRole: deleteField() as unknown as undefined,
+        });
+      } else {
+        await updateUser(userId, { groupRole: next });
+      }
+      setUsers((prev) =>
+        prev
+          .map((u) =>
+            u.id === userId ? { ...u, groupRole: next ?? undefined } : u
+          )
+          .sort((a, b) => {
+            const ag = a.group ?? '';
+            const bg = b.group ?? '';
+            if (ag !== bg) {
+              if (!ag) return 1;
+              if (!bg) return -1;
+              return ag.localeCompare(bg, 'ja');
+            }
+            const rankDiff =
+              groupRoleRank(a.groupRole) - groupRoleRank(b.groupRole);
+            if (rankDiff !== 0) return rankDiff;
+            if (a.role !== b.role) return a.role === 'leader' ? -1 : 1;
+            return a.name.localeCompare(b.name, 'ja');
+          })
+      );
+    } catch (err) {
+      console.error(err);
+      alert('保存に失敗しました。');
+    } finally {
+      setSavingGroupRoleId(null);
+    }
+  }
+
   async function handleSaveBirthday(userId: string) {
     setSavingBirthdayId(userId);
     try {
@@ -243,15 +328,39 @@ export default function AdminMembersPage() {
         </button>
       </div>
 
-      {/* User list */}
+      {/* User list — 組ごとにグループ表示 */}
       {users.length === 0 ? (
         <div className="rounded-lg border border-dashed border-gray-300 bg-white p-12 text-center">
           <p className="text-gray-500">ユーザーがいません。</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-          <ul className="divide-y divide-gray-100">
-            {users.map((u) => {
+        <div className="space-y-4">
+          {(() => {
+            const grouped = new Map<string, UserProfile[]>();
+            for (const u of users) {
+              const key = u.group && u.group.trim() ? u.group : UNGROUPED_KEY;
+              const arr = grouped.get(key) ?? [];
+              arr.push(u);
+              grouped.set(key, arr);
+            }
+            const entries = Array.from(grouped.entries()).sort((a, b) => {
+              if (a[0] === UNGROUPED_KEY) return 1;
+              if (b[0] === UNGROUPED_KEY) return -1;
+              return a[0].localeCompare(b[0], 'ja');
+            });
+            return entries.map(([groupKey, groupUsers]) => (
+              <div
+                key={groupKey}
+                className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+              >
+                <div className="flex items-baseline justify-between gap-2 border-b border-gray-100 bg-gray-50 px-5 py-2.5">
+                  <h2 className="text-sm font-semibold text-gray-800">
+                    {groupKey === UNGROUPED_KEY ? '組未設定' : groupKey}
+                  </h2>
+                  <span className="text-xs text-gray-500">{groupUsers.length}人</span>
+                </div>
+                <ul className="divide-y divide-gray-100">
+                  {groupUsers.map((u) => {
               const grade = u.birthday ? calcSchoolGrade(u.birthday) : null;
               const isEditingKana = editingKanaId === u.id;
               const isEditingGroup = editingGroupId === u.id;
@@ -284,6 +393,13 @@ export default function AdminMembersPage() {
                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${roleBadgeColor[u.role]}`}>
                           {roleLabel[u.role]}
                         </span>
+                        {u.groupRole && (
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${groupRoleBadgeColor[u.groupRole]}`}
+                          >
+                            {groupRoleLabel[u.groupRole]}
+                          </span>
+                        )}
                         {grade && (
                           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${gradeBadgeClass(grade.level)}`}>
                             {grade.label}
@@ -402,6 +518,30 @@ export default function AdminMembersPage() {
                         )}
                       </div>
 
+                      {/* 組内役職 — select */}
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="text-xs text-gray-400 shrink-0">役職:</span>
+                        <select
+                          value={u.groupRole ?? ''}
+                          disabled={savingGroupRoleId === u.id}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            handleSaveGroupRole(
+                              u.id,
+                              v === 'kumicho' || v === 'jicho' ? (v as GroupRole) : null
+                            );
+                          }}
+                          className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:opacity-60"
+                        >
+                          <option value="">通常</option>
+                          <option value="kumicho">組長</option>
+                          <option value="jicho">次長</option>
+                        </select>
+                        {savingGroupRoleId === u.id && (
+                          <span className="text-xs text-gray-400">保存中...</span>
+                        )}
+                      </div>
+
                       {/* 誕生日 — inline edit */}
                       <div className="mt-1 flex items-center gap-2">
                         <span className="text-xs text-gray-400 shrink-0">誕生日:</span>
@@ -469,7 +609,10 @@ export default function AdminMembersPage() {
                 </li>
               );
             })}
-          </ul>
+                </ul>
+              </div>
+            ));
+          })()}
         </div>
       )}
 
@@ -556,6 +699,24 @@ export default function AdminMembersPage() {
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                   placeholder="例: ビーバー組"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">組内役職</label>
+                <select
+                  value={form.groupRole}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      groupRole: (e.target.value as '' | GroupRole) ?? '',
+                    })
+                  }
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                >
+                  <option value="">通常</option>
+                  <option value="kumicho">組長</option>
+                  <option value="jicho">次長</option>
+                </select>
               </div>
 
               <div>
